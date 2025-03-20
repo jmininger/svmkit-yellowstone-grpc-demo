@@ -5,6 +5,12 @@ import * as tls from "@pulumi/tls";
 const nodeConfig = new pulumi.Config("node");
 const instanceType = nodeConfig.get("instanceType") ?? "t3.2xlarge";
 const instanceArch = nodeConfig.get("instanceArch") ?? "x86_64";
+export const agaveVersion = nodeConfig.get("agaveVersion") ?? "2.2.1";
+
+// Define the grpc plugin release version and asset
+const geyserVersion = "v6.0.0+solana.2.2.1";
+const assetName = "yellowstone-grpc-geyser-release-x86_64-unknown-linux-gnu.tar.bz2";
+const geyserUrl = `https://github.com/rpcpool/yellowstone-grpc/releases/download/${geyserVersion}/${assetName}`;
 
 // Setup a local SSH private key, stored inside Pulumi.
 export const sshKey = new tls.PrivateKey("ssh-key", {
@@ -129,6 +135,33 @@ mkswap /swapfile
 systemctl daemon-reload
 mount -a
 swapon -a
+
+# Download yellowstone-grpc geyser plugin
+set -e  # Exit on error
+
+# Update package list and install dependencies
+apt-get update
+apt-get install -y wget tar
+
+# Download the release
+wget -q "${geyserUrl}" -O /tmp/yellowstone-grpc.tar.bz2
+if [ $? -ne 0 ]; then
+    echo "Failed to download release"
+    exit 1
+fi
+
+# Extract the binary
+tar -xjf /tmp/yellowstone-grpc.tar.bz2 -C /usr/local/bin/
+if [ ! -f /usr/local/bin/yellowstone-grpc-geyser/lib/libyellowstone_grpc_geyser.so ]; then
+    echo "Binary not found after extraction"
+    exit 1
+fi
+
+# Clean up
+rm /tmp/yellowstone-grpc.tar.bz2
+
+# Set execute permissions
+chmod +x /usr/local/bin/yellowstone-grpc-geyser
 `,
   tags: {
     Name: `${pulumi.getStack()}-validator`,
