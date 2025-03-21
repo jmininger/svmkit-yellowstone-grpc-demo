@@ -1,3 +1,5 @@
+import * as fs from "fs";
+
 // Make sure we grab the ubuntu 22 version of the release so that it works on our machine
 const assetName =
   "yellowstone-grpc-geyser-release22-x86_64-unknown-linux-gnu.tar.bz2";

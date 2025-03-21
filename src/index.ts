@@ -1,7 +1,7 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as svmkit from "@svmkit/pulumi-svmkit";
 
-import { sshKey, instance, agaveVersion, pluginPath } from "./aws";
+import { sshKey, instance } from "./aws";
 import { GRPC_CONFIG_PATH } from "./grpc_geyser";
 
 const RPC_PORT = 8899;
@@ -10,7 +10,7 @@ const FAUCET_PORT = 9900;
 
 // Note: It's very important that the agave version and the grpc geyser plugin version are
 // compatible
-const AGAVE_VERSION = nodeConfig.get("agaveVersion") ?? "2.2.1-1";
+const AGAVE_VERSION = "2.2.1-1";
 
 // Create some keys for this validator to use.
 const validatorKey = new svmkit.KeyPair("validator-key");
@@ -126,9 +126,7 @@ const validator = new svmkit.validator.Agave(
 );
 
 // Tuner setup
-const tunerVariant =
-  tunerConfig.get<svmkit.tuner.TunerVariant>("variant") ??
-  svmkit.tuner.TunerVariant.Generic;
+const tunerVariant = svmkit.tuner.TunerVariant.Generic;
 
 // Retrieve the default tuner parameters for that variant
 const genericTunerParamsOutput = svmkit.tuner.getDefaultTunerParamsOutput({

@@ -32,7 +32,6 @@ GRPC geyser.
 
 In the example, the deployed validator is running remotely, so you’ll need to forward the relevant ports to your local machine to test the GRPC geyser.
 
-
 Forward the ports to your local machine:
 
 ```
