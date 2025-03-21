@@ -10,18 +10,25 @@ const CONFIG_DIR = "/home/sol";
 export const GRPC_PLUGIN_DIR = `${CONFIG_DIR}/yellowstone-grpc-geyser-release`;
 export const GRPC_CONFIG_PATH = `${CONFIG_DIR}/grpc_config.json`;
 
-export const geyser_config = fs.readFileSync(
-  "./dragonmouth_config.json",
-  "utf8",
-);
+const yellowstoneConfig = fs.readFileSync("./yellowstone-config.json", "utf8");
 
-export const geyser_setup_script_content = `
+// Run some checks to make sure the yellowstone-config.json has a matching `libpath` to the
+// one being set on the validator
+var yCfgJson = JSON.parse(yellowstoneConfig);
+if (yCfgJson["libpath"] !== GRPC_CONFIG_PATH) {
+  console.error(
+    `yellowstone-config.json currently indicates that the libpath is set to ${yCfgJson["libpath"]}, but its true path on the validator is ${GRPC_CONFIG_PATH}. Please update the libpath in yellowstone-config.json to match the true path on the validator.`,
+  );
+  process.exit(1);
+}
+
+export const geyserSetupScriptContent = `
 # Download yellowstone-grpc geyser plugin
 set -e  # Exit on error
 
 # Redirect all output to a log file for debugging
-# exec > /var/log/userdata.log 2>&1
-# echo "Starting UserData script at $(date)"
+exec > /var/log/userdata.log 2>&1
+echo "Starting UserData script at $(date)"
 
 # Update package list and install dependencies
 apt-get update
@@ -48,6 +55,6 @@ rm /tmp/yellowstone-grpc.tar.bz2
 chmod +x ${GRPC_PLUGIN_DIR}
 
 cat << 'EOF' > ${GRPC_CONFIG_PATH}
-${geyser_config}
+${yellowstoneConfig}
 EOF
 `;
