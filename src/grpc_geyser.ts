@@ -16,7 +16,7 @@ const yellowstoneConfig = fs.readFileSync("./yellowstone-config.json", "utf8");
 // Run some checks to make sure the yellowstone-config.json has a matching `libpath` to the
 // one being set on the validator
 var yCfgJson = JSON.parse(yellowstoneConfig);
-if (yCfgJson["libpath"] !== GRPC_CONFIG_PATH) {
+if (yCfgJson["libpath"] !== GRPC_PLUGIN_PATH) {
   console.error(
     `yellowstone-config.json currently indicates that the libpath is set to ${yCfgJson["libpath"]}, but its true path on the validator is ${GRPC_PLUGIN_PATH}. Please update the libpath in yellowstone-config.json to match the true path on the validator.`,
   );
