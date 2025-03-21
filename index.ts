@@ -1,7 +1,7 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as svmkit from "@svmkit/pulumi-svmkit";
 
-import { sshKey, instance, agaveVersion , pluginPath} from "./aws";
+import { sshKey, instance, agaveVersion, pluginPath } from "./aws";
 import { GRPC_CONFIG_PATH } from "./grpc_geyser";
 
 const RPC_PORT = 8899;
@@ -28,54 +28,57 @@ const connection = {
 
 // Add the genesis configuration before the Agave instance
 const genesis = new svmkit.genesis.Solana(
-    "genesis",
-    {
-        connection,
-        version: AGAVE_VERSION,
-        flags: {
-            bootstrapValidators: [{
-                identityPubkey: validatorKey.publicKey,
-                votePubkey: voteAccountKey.publicKey,
-                stakePubkey: stakeAccountKey.publicKey,
-            }],
-            ledgerPath: "/home/sol/ledger",
-            faucetPubkey: faucetKey.publicKey,
-            bootstrapValidatorStakeLamports: 10000000000,  // 10 SOL
-            enableWarmupEpochs: true,
-            slotsPerEpoch: 8192,
+  "genesis",
+  {
+    connection,
+    version: AGAVE_VERSION,
+    flags: {
+      bootstrapValidators: [
+        {
+          identityPubkey: validatorKey.publicKey,
+          votePubkey: voteAccountKey.publicKey,
+          stakePubkey: stakeAccountKey.publicKey,
         },
-        primordial: [
-            {
-                pubkey: validatorKey.publicKey,
-                lamports: 1000000000000,  // 1000 SOL
-            },
-            {
-                pubkey: treasuryKey.publicKey,
-                lamports: 100000000000000,  // 100000 SOL
-            },
-            {
-                pubkey: faucetKey.publicKey,
-                lamports: 1000000000000,  // 1000 SOL
-            },
-        ],
+      ],
+      ledgerPath: "/home/sol/ledger",
+      faucetPubkey: faucetKey.publicKey,
+      bootstrapValidatorStakeLamports: 10000000000, // 10 SOL
+      enableWarmupEpochs: true,
+      slotsPerEpoch: 8192,
     },
-    {
-        dependsOn: [instance],
-    }
+    primordial: [
+      {
+        pubkey: validatorKey.publicKey,
+        lamports: 1000000000000, // 1000 SOL
+      },
+      {
+        pubkey: treasuryKey.publicKey,
+        lamports: 100000000000000, // 100000 SOL
+      },
+      {
+        pubkey: faucetKey.publicKey,
+        lamports: 1000000000000, // 1000 SOL
+      },
+    ],
+  },
+  {
+    dependsOn: [instance],
+  },
 );
 
-
-const faucet = new svmkit.faucet.Faucet("bootstrap-faucet", { "connection": connection, "keypair": faucetKey.json, "flags": {}}, { "dependsOn": [genesis]})
+const faucet = new svmkit.faucet.Faucet(
+  "bootstrap-faucet",
+  { connection: connection, keypair: faucetKey.json, flags: {} },
+  { dependsOn: [genesis] },
+);
 // Create the environment configuration
 const solEnv = {
-    rpcURL: instance.privateIp.apply(
-        (ip) => `http://${ip}:${RPC_PORT}`
-    )
+  rpcURL: instance.privateIp.apply((ip) => `http://${ip}:${RPC_PORT}`),
 };
 
 // Update the rpcFaucetAddress definition
 const rpcFaucetAddress = instance.privateIp.apply(
-    (ip) => `${ip}:${FAUCET_PORT}`
+  (ip) => `${ip}:${FAUCET_PORT}`,
 );
 
 // Update the Agave instance configuration
@@ -85,8 +88,8 @@ const validator = new svmkit.validator.Agave(
     connection,
     version: AGAVE_VERSION,
     environment: solEnv,
-    startupPolicy: { "waitForRPCHealth": true },
-    shutdownPolicy: { "force": true },
+    startupPolicy: { waitForRPCHealth: true },
+    shutdownPolicy: { force: true },
     keyPairs: {
       identity: validatorKey.json,
       voteAccount: voteAccountKey.json,
@@ -109,7 +112,7 @@ const validator = new svmkit.validator.Agave(
       fullRpcAPI: true,
       noVoting: false,
       geyserPluginAlwaysEnabled: true,
-      geyserPluginConfig: [ GRPC_CONFIG_PATH ],
+      geyserPluginConfig: [GRPC_CONFIG_PATH],
       // expectedGenesisHash: genesis.genesisHash,
       // extraFlags: [
       //   "--enable-extended-tx-metadata-storage",
@@ -124,8 +127,8 @@ const validator = new svmkit.validator.Agave(
 
 // Tuner setup
 const tunerVariant =
-    tunerConfig.get<svmkit.tuner.TunerVariant>("variant") ??
-    svmkit.tuner.TunerVariant.Generic;
+  tunerConfig.get<svmkit.tuner.TunerVariant>("variant") ??
+  svmkit.tuner.TunerVariant.Generic;
 
 // Retrieve the default tuner parameters for that variant
 const genericTunerParamsOutput = svmkit.tuner.getDefaultTunerParamsOutput({
@@ -140,7 +143,6 @@ const tunerParams = genericTunerParamsOutput.apply((p) => ({
   fs: p.fs,
 }));
 
-
 // Create the Tuner resource on the EC2 instance
 const tuner = new svmkit.tuner.Tuner(
   "tuner",
@@ -150,7 +152,7 @@ const tuner = new svmkit.tuner.Tuner(
   },
   {
     dependsOn: [instance],
-  }
+  },
 );
 
 // Expose information required to SSH to the validator host.

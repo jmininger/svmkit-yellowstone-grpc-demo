@@ -39,49 +39,49 @@ const ami = pulumi.output(
 const stackName = pulumi.getStack();
 
 const externalSg = new aws.ec2.SecurityGroup("external-access", {
-    description: "Allow external SSH access to all of the nodes",
-    ingress: [
-        {
-            protocol: "tcp",
-            fromPort: 0,
-            toPort: 22,
-            cidrBlocks: ["0.0.0.0/0"],
-        },
-    ],
-    egress: [
-        {
-            protocol: "-1",
-            fromPort: 0,
-            toPort: 0,
-            cidrBlocks: ["0.0.0.0/0"],
-        }
-    ],
-    tags: {
-        Stack: stackName,
-    }
+  description: "Allow external SSH access to all of the nodes",
+  ingress: [
+    {
+      protocol: "tcp",
+      fromPort: 0,
+      toPort: 22,
+      cidrBlocks: ["0.0.0.0/0"],
+    },
+  ],
+  egress: [
+    {
+      protocol: "-1",
+      fromPort: 0,
+      toPort: 0,
+      cidrBlocks: ["0.0.0.0/0"],
+    },
+  ],
+  tags: {
+    Stack: stackName,
+  },
 });
 
 const internalSg = new aws.ec2.SecurityGroup("internal-access", {
-    description: "Permissive internal traffic",
-    ingress: [
-        {
-            protocol: "-1",
-            fromPort: 0,
-            toPort: 0,
-            self: true,
-        },
-    ],
-    egress: [
-        {
-            protocol: "-1",
-            fromPort: 0,
-            toPort: 0,
-            cidrBlocks: ["0.0.0.0/0"],
-        }
-    ],
-    tags: {
-        Stack: stackName,
-    }
+  description: "Permissive internal traffic",
+  ingress: [
+    {
+      protocol: "-1",
+      fromPort: 0,
+      toPort: 0,
+      self: true,
+    },
+  ],
+  egress: [
+    {
+      protocol: "-1",
+      fromPort: 0,
+      toPort: 0,
+      cidrBlocks: ["0.0.0.0/0"],
+    },
+  ],
+  tags: {
+    Stack: stackName,
+  },
 });
 
 export const instance = new aws.ec2.Instance("instance", {
