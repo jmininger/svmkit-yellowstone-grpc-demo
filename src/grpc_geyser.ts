@@ -7,7 +7,8 @@ const geyserVersion = "v6.0.0+solana.2.2.1";
 const releaseUrl = `https://github.com/rpcpool/yellowstone-grpc/releases/download/${geyserVersion}/${assetName}`;
 
 const CONFIG_DIR = "/home/sol";
-export const GRPC_PLUGIN_DIR = `${CONFIG_DIR}/yellowstone-grpc-geyser-release`;
+const GRPC_PLUGIN_DIR = `${CONFIG_DIR}/yellowstone-grpc-geyser-release`;
+const GRPC_PLUGIN_PATH = `${GRPC_PLUGIN_DIR}/lib/libyellowstone_grpc_geyser.so`;
 export const GRPC_CONFIG_PATH = `${CONFIG_DIR}/grpc_config.json`;
 
 const yellowstoneConfig = fs.readFileSync("./yellowstone-config.json", "utf8");
@@ -17,7 +18,7 @@ const yellowstoneConfig = fs.readFileSync("./yellowstone-config.json", "utf8");
 var yCfgJson = JSON.parse(yellowstoneConfig);
 if (yCfgJson["libpath"] !== GRPC_CONFIG_PATH) {
   console.error(
-    `yellowstone-config.json currently indicates that the libpath is set to ${yCfgJson["libpath"]}, but its true path on the validator is ${GRPC_CONFIG_PATH}. Please update the libpath in yellowstone-config.json to match the true path on the validator.`,
+    `yellowstone-config.json currently indicates that the libpath is set to ${yCfgJson["libpath"]}, but its true path on the validator is ${GRPC_PLUGIN_PATH}. Please update the libpath in yellowstone-config.json to match the true path on the validator.`,
   );
   process.exit(1);
 }
@@ -43,7 +44,7 @@ fi
 
 # Extract the binary
 tar -xjvf /tmp/yellowstone-grpc.tar.bz2 -C ${CONFIG_DIR}
-if [ ! -f ${GRPC_PLUGIN_DIR}/lib/libyellowstone_grpc_geyser.so ]; then
+if [ ! -f ${GRPC_PLUGIN_PATH} ]; then
     echo "Binary not found after extraction"
     exit 1
 fi
