@@ -1,17 +1,16 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as svmkit from "@svmkit/pulumi-svmkit";
 
-const solanaConfig = new pulumi.Config("solana");
-const tunerConfig = new pulumi.Config("tuner");
-
-// AWS-specific resources are created inside.
 import { sshKey, instance, agaveVersion , pluginPath} from "./aws";
+import { GRPC_CONFIG_PATH } from "./grpc_geyser";
 
-// Add these constants near the top of the file, after the imports
 const RPC_PORT = 8899;
 const GOSSIP_PORT = 8001;
 const FAUCET_PORT = 9900;
-const AGAVE_VERSION = `${agaveVersion}-1`;
+
+// Note: It's very important that the agave version and the grpc geyser plugin version are
+// compatible
+const AGAVE_VERSION = nodeConfig.get("agaveVersion") ?? "2.2.1-1";
 
 // Create some keys for this validator to use.
 const validatorKey = new svmkit.KeyPair("validator-key");
@@ -110,7 +109,7 @@ const validator = new svmkit.validator.Agave(
       fullRpcAPI: true,
       noVoting: false,
       geyserPluginAlwaysEnabled: true,
-      geyserPluginConfig: [`${pluginPath}/config.json`],
+      geyserPluginConfig: [ GRPC_CONFIG_PATH ],
       // expectedGenesisHash: genesis.genesisHash,
       // extraFlags: [
       //   "--enable-extended-tx-metadata-storage",
@@ -133,7 +132,6 @@ const genericTunerParamsOutput = svmkit.tuner.getDefaultTunerParamsOutput({
   variant: tunerVariant,
 });
 
-// "Apply" those params so we can pass them to the Tuner constructor
 const tunerParams = genericTunerParamsOutput.apply((p) => ({
   cpuGovernor: p.cpuGovernor,
   kernel: p.kernel,
@@ -156,7 +154,7 @@ const tuner = new svmkit.tuner.Tuner(
 );
 
 // Expose information required to SSH to the validator host.
-export const nodes_name = ["instance"];
+export const nodes_name = ["validator"];
 export const nodes_public_ip = [instance.publicIp];
 export const nodes_private_key = [sshKey.privateKeyOpenssh];
 export const tuner_params = tunerParams;

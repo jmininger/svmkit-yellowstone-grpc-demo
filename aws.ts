@@ -3,19 +3,11 @@ import * as aws from "@pulumi/aws";
 import * as tls from "@pulumi/tls";
 import * as fs from "fs";
 
+import { geyser_setup_script_content } from "./grpc_geyser";
+
 const nodeConfig = new pulumi.Config("node");
 const instanceType = nodeConfig.get("instanceType") ?? "t3.2xlarge";
 const instanceArch = nodeConfig.get("instanceArch") ?? "x86_64";
-export const agaveVersion = nodeConfig.get("agaveVersion") ?? "2.2.1";
-
-// Define the grpc plugin release version and asset
-const geyserVersion = "v6.0.0+solana.2.2.1";
-// Make sure we grab the ubuntu 22 version of the release so that it works on our machine
-const assetName = "yellowstone-grpc-geyser-release22-x86_64-unknown-linux-gnu.tar.bz2";
-const releaseUrl = `https://github.com/rpcpool/yellowstone-grpc/releases/download/${geyserVersion}/${assetName}`;
-export const pluginPath = "/home/sol"
-
-const configContent = fs.readFileSync("./dragonmouth_config.json", "utf8");
 
 // Setup a local SSH private key, stored inside Pulumi.
 export const sshKey = new tls.PrivateKey("ssh-key", {
@@ -92,15 +84,11 @@ const internalSg = new aws.ec2.SecurityGroup("internal-access", {
     }
 });
 
-// Export the security groups so they can be used in other parts of your infrastructure
-export const externalSecurityGroup = externalSg;
-export const internalSecurityGroup = internalSg;
-
 export const instance = new aws.ec2.Instance("instance", {
   ami,
   instanceType,
   keyName: keyPair.keyName,
-  vpcSecurityGroupIds: [externalSecurityGroup.id, internalSecurityGroup.id],
+  vpcSecurityGroupIds: [externalSg.id, internalSg.id],
   ebsBlockDevices: [
     {
       deviceName: "/dev/sdf",
@@ -141,42 +129,7 @@ systemctl daemon-reload
 mount -a
 swapon -a
 
-# Download yellowstone-grpc geyser plugin
-set -e  # Exit on error
-
-# Redirect all output to a log file for debugging
-exec > /var/log/userdata.log 2>&1
-echo "Starting UserData script at $(date)"
-
-# Update package list and install dependencies
-apt-get update
-apt-get install -y wget tar bzip2
-
-# Download the release
-wget -q "${releaseUrl}" -O /tmp/yellowstone-grpc.tar.bz2
-if [ $? -ne 0 ]; then
-    echo "Failed to download release"
-    exit 1
-fi
-
-# Extract the binary
-tar -xjvf /tmp/yellowstone-grpc.tar.bz2 -C ${pluginPath}
-echo "GETTING BINARY"
-echo "${pluginPath}"
-if [ ! -f ${pluginPath}/yellowstone-grpc-geyser-release/lib/libyellowstone_grpc_geyser.so ]; then
-    echo "Binary not found after extraction"
-    exit 1
-fi
-
-# Clean up
-rm /tmp/yellowstone-grpc.tar.bz2
-
-# Set execute permissions
-chmod +x ${pluginPath}/yellowstone-grpc-geyser-release
-
-cat << 'EOF' > ${pluginPath}/config.json
-${configContent}
-EOF
+${geyser_setup_script_content}
 
 `,
   tags: {
