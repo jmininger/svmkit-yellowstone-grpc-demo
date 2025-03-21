@@ -1,0 +1,33 @@
+{
+  "libpath": "/home/sol/yellowstone-grpc-geyser-release/lib/libyellowstone_grpc_geyser.so",
+  "log": {
+    "level": "info"
+  },
+  "tokio": {
+    "worker_threads": 4,
+    "affinity": null
+  },
+  "grpc": {
+    "address": "0.0.0.0:10000",
+    "max_decoding_message_size": 4194304,
+    "snapshot_client_channel_capacity": 1000000,
+    "channel_capacity": 10000,
+    "filter_limits": {
+      "accounts": {
+        "max": 1,
+        "account_max": 10
+      },
+      "slots": {
+        "max": 1
+      },
+      "transactions": {
+        "max": 1,
+        "account_include_max": 10
+      },
+      "blocks": {
+        "max": 1,
+        "account_include_max": 10
+      }
+    }
+  }
+}

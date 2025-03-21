@@ -1,6 +1,7 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 import * as tls from "@pulumi/tls";
+import * as fs from "fs";
 
 const nodeConfig = new pulumi.Config("node");
 const instanceType = nodeConfig.get("instanceType") ?? "t3.2xlarge";
@@ -9,8 +10,12 @@ export const agaveVersion = nodeConfig.get("agaveVersion") ?? "2.2.1";
 
 // Define the grpc plugin release version and asset
 const geyserVersion = "v6.0.0+solana.2.2.1";
-const assetName = "yellowstone-grpc-geyser-release-x86_64-unknown-linux-gnu.tar.bz2";
-const geyserUrl = `https://github.com/rpcpool/yellowstone-grpc/releases/download/${geyserVersion}/${assetName}`;
+// Make sure we grab the ubuntu 22 version of the release so that it works on our machine
+const assetName = "yellowstone-grpc-geyser-release22-x86_64-unknown-linux-gnu.tar.bz2";
+const releaseUrl = `https://github.com/rpcpool/yellowstone-grpc/releases/download/${geyserVersion}/${assetName}`;
+export const pluginPath = "/home/sol"
+
+const configContent = fs.readFileSync("./dragonmouth_config.json", "utf8");
 
 // Setup a local SSH private key, stored inside Pulumi.
 export const sshKey = new tls.PrivateKey("ssh-key", {
@@ -139,20 +144,26 @@ swapon -a
 # Download yellowstone-grpc geyser plugin
 set -e  # Exit on error
 
+# Redirect all output to a log file for debugging
+exec > /var/log/userdata.log 2>&1
+echo "Starting UserData script at $(date)"
+
 # Update package list and install dependencies
 apt-get update
-apt-get install -y wget tar
+apt-get install -y wget tar bzip2
 
 # Download the release
-wget -q "${geyserUrl}" -O /tmp/yellowstone-grpc.tar.bz2
+wget -q "${releaseUrl}" -O /tmp/yellowstone-grpc.tar.bz2
 if [ $? -ne 0 ]; then
     echo "Failed to download release"
     exit 1
 fi
 
 # Extract the binary
-tar -xjf /tmp/yellowstone-grpc.tar.bz2 -C /usr/local/bin/
-if [ ! -f /usr/local/bin/yellowstone-grpc-geyser/lib/libyellowstone_grpc_geyser.so ]; then
+tar -xjvf /tmp/yellowstone-grpc.tar.bz2 -C ${pluginPath}
+echo "GETTING BINARY"
+echo "${pluginPath}"
+if [ ! -f ${pluginPath}/yellowstone-grpc-geyser-release/lib/libyellowstone_grpc_geyser.so ]; then
     echo "Binary not found after extraction"
     exit 1
 fi
@@ -161,7 +172,12 @@ fi
 rm /tmp/yellowstone-grpc.tar.bz2
 
 # Set execute permissions
-chmod +x /usr/local/bin/yellowstone-grpc-geyser
+chmod +x ${pluginPath}/yellowstone-grpc-geyser-release
+
+cat << 'EOF' > ${pluginPath}/config.json
+${configContent}
+EOF
+
 `,
   tags: {
     Name: `${pulumi.getStack()}-validator`,

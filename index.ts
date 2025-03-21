@@ -5,13 +5,13 @@ const solanaConfig = new pulumi.Config("solana");
 const tunerConfig = new pulumi.Config("tuner");
 
 // AWS-specific resources are created inside.
-import { sshKey, instance, agaveVersion } from "./aws";
+import { sshKey, instance, agaveVersion , pluginPath} from "./aws";
 
 // Add these constants near the top of the file, after the imports
 const RPC_PORT = 8899;
 const GOSSIP_PORT = 8001;
 const FAUCET_PORT = 9900;
-const AGAVE_VERSION = `{agaveVersion}-1`;
+const AGAVE_VERSION = `${agaveVersion}-1`;
 
 // Create some keys for this validator to use.
 const validatorKey = new svmkit.KeyPair("validator-key");
@@ -107,9 +107,10 @@ const validator = new svmkit.validator.Agave(
       useSnapshotArchivesAtStartup: "when-newest",
       allowPrivateAddr: true,
       rpcFaucetAddress: rpcFaucetAddress,
-      // Bootstrap node specific flags
       fullRpcAPI: true,
       noVoting: false,
+      geyserPluginAlwaysEnabled: true,
+      geyserPluginConfig: [`${pluginPath}/config.json`],
       // expectedGenesisHash: genesis.genesisHash,
       // extraFlags: [
       //   "--enable-extended-tx-metadata-storage",
