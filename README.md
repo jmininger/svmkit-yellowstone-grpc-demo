@@ -37,6 +37,14 @@ Forward the ports to your local machine:
 ```
 % ./ssh-to-host 0 -L 10000:localhost:10000
 ```
+You can now test the GRPC connection by connecting to `localhost:10000` from your local machine.
+In this current example we require you to have `grpcurl` installed locally. You can install it by
+running `go install github.com/fullstorydev/grpcurl/cmd/grpcurl@latest`. You must then download both
+the `solana-storage.proto` and the `geyser.proto`
+protobufs from the [Yellowstone repository](https://github.com/rpcpool/yellowstone-grpc/releases/tag/v6.0.0%2Bsolana.2.2.1) and place them in the current dir. Then you can run:
+```bash
+% grpcurl -proto geyser.proto -plaintext localhost:10000 geyser.Geyser/GetBlockHeight
+```
 
 5. (Optional) Tear down the example
 

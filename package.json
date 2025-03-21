@@ -1,6 +1,6 @@
 {
   "name": "svmkit-grpc-demo",
-  "main": "index.ts",
+  "main": "src/index.ts",
   "scripts": {
     "fmt": "prettier -w ."
   },
