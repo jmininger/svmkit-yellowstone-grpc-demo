@@ -1,6 +1,7 @@
 {
   "name": "svmkit-grpc-demo",
   "main": "src/index.ts",
+  "type": "module",
   "scripts": {
     "fmt": "prettier -w .",
     "build:client": "tsc -p tsconfig.client.json",
