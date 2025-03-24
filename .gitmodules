@@ -1,0 +1,3 @@
+[submodule "deps/yellowstone-grpc"]
+	path = deps/yellowstone-grpc
+	url = https://github.com/rpcpool/yellowstone-grpc.git
