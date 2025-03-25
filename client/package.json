@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@solana-program/stake": "^0.2.0",
-    "@triton-one/yellowstone-grpc": "^4.0.0"
+    "@triton-one/yellowstone-grpc": "^4.0.0",
+    "bs58": "^6.0.0"
   }
 }

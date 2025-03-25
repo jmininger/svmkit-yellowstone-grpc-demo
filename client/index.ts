@@ -2,12 +2,13 @@ import Client, {
   CommitmentLevel,
   SubscribeRequest,
   SubscribeRequestFilterAccountsFilter,
+  SubscribeUpdateAccountInfo,
 } from "@triton-one/yellowstone-grpc";
 import {
   STAKE_PROGRAM_ADDRESS,
   decodeStakeStateAccount,
 } from '@solana-program/stake';
-
+import bs58 from 'bs58';
 
 const ACCOUNT_PK = "HFVLaumZ8XRaxNvr2srUSWinnwoaatwEbb1aEDAxoZQg";
 
@@ -18,8 +19,8 @@ const client = new Client(serverEndpoint, undefined, undefined);
 
 const version = await client.getVersion();
 console.log("Version: ", version);
-const latestBlockHeight = await client.getBlockHeight(CommitmentLevel.FINALIZED);
-console.log("Latest Block Height: ", latestBlockHeight);
+// const latestBlockHeight = await client.getBlockHeight(CommitmentLevel.FINALIZED);
+// console.log("Latest Block Height: ", latestBlockHeight);
 
 // Subscribe for events
 const stream = await client.subscribe();
@@ -41,8 +42,21 @@ const streamClosed = new Promise<void>((resolve, reject) => {
 // Handle account updates
 stream.on("data", (data) => {
   if (data.account) {
+    // const accountPk = accountInfo.account
     const accountInfo = data.account;
-    console.log("Account Update:", decodeStakeStateAccount(accountInfo.data));
+  
+    const address = bs58.encode(accountInfo.account.pubkey);
+    console.log("Account update for StakeAccount: ", address);
+
+    const sa = decodeStakeStateAccount(accountInfo.account)
+    // Only show updates if its a delegation or undelegation
+    const state = sa.data.state
+    if (state.__kind === 'Stake') {
+      const [, stake] = state.fields; // Second field is `Stake`
+      console.log(stake);
+    } else {
+      console.log('Not Active');
+    }
   }
 });
 
