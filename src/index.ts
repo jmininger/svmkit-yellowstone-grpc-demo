@@ -158,3 +158,6 @@ export const nodes_name = ["validator"];
 export const nodes_public_ip = [instance.publicIp];
 export const nodes_private_key = [sshKey.privateKeyOpenssh];
 export const tuner_params = tunerParams;
+export const stake_account_key = [stakeAccountKey.publicKey];
+export const vote_account_key = [voteAccountKey.publicKey];
+
