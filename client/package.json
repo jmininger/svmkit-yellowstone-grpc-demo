@@ -3,17 +3,15 @@
   "main": "index.ts",
   "type": "module",
   "scripts": {
-    "fmt": "prettier -w .",
     "build:client": "tsc -p tsconfig.json",
     "client": "npm run build:client && node bin/index.js"
   },
   "devDependencies": {
-    "@types/node": "^18",
-    "prettier": "^3.5.3",
-    "typescript": "^5.0.0"
+    "@types/node": "^22.13.13",
+    "typescript": "^5.8.2"
   },
   "dependencies": {
-    "@solana/rpc-types": "^2.1.0",
+    "@solana-program/stake": "^0.2.0",
     "@triton-one/yellowstone-grpc": "^4.0.0"
   }
 }

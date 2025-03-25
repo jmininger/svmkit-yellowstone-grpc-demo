@@ -3,16 +3,23 @@ import Client, {
   SubscribeRequest,
   SubscribeRequestFilterAccountsFilter,
 } from "@triton-one/yellowstone-grpc";
+import {
+  STAKE_PROGRAM_ADDRESS,
+  decodeStakeStateAccount,
+} from '@solana-program/stake';
 
-const ACCOUNT_PK = "AVyADfkTrCpL49w2hp3hy7oLzY4iijsMxeQZEdj8mRDs"
+
+const ACCOUNT_PK = "HFVLaumZ8XRaxNvr2srUSWinnwoaatwEbb1aEDAxoZQg";
 
 const serverEndpoint = process.env.SERVER_ENDPOINT || "http://localhost:10000";
 // const token = process.env.TOKEN || "<your-token>";
 
 const client = new Client(serverEndpoint, undefined, undefined);
+
 const version = await client.getVersion();
-console.log("Version: ", version)
-// grpc.runClient(client).then(console.log).catch(console.error);
+console.log("Version: ", version);
+const latestBlockHeight = await client.getBlockHeight(CommitmentLevel.FINALIZED);
+console.log("Latest Block Height: ", latestBlockHeight);
 
 // Subscribe for events
 const stream = await client.subscribe();
@@ -35,32 +42,32 @@ const streamClosed = new Promise<void>((resolve, reject) => {
 stream.on("data", (data) => {
   if (data.account) {
     const accountInfo = data.account;
-    console.log('Account Update:', accountInfo);
+    console.log("Account Update:", decodeStakeStateAccount(accountInfo.data));
   }
 });
 
 const request: SubscribeRequest = {
-    accounts: {
-      client: {
-        owner: ["Stake11111111111111111111111111111111111111"],
-        account: [ACCOUNT_PK],
-        filters: [], // You can add additional filters here if needed
-      }
+  accounts: {
+    client: {
+      owner: [],
+      account: [ACCOUNT_PK],
+      filters: [], // You can add additional filters here if needed
     },
-    slots: {},
-    transactions: {},
-    transactionsStatus: {},
-    entry: {},
-    blocks: {},
-    blocksMeta: {},
-    commitment: undefined,
-    accountsDataSlice: [],
-    ping: undefined,
-  };
+  },
+  slots: {},
+  transactions: {},
+  transactionsStatus: {},
+  entry: {},
+  blocks: {},
+  blocksMeta: {},
+  commitment: CommitmentLevel.CONFIRMED,
+  accountsDataSlice: [],
+  ping: undefined,
+};
 
-  // Send subscribe request
+// Send subscribe request
 await new Promise<void>((resolve, reject) => {
-  stream.write(request, (err: Error|null) => {
+  stream.write(request, (err: Error | null) => {
     if (err === null || err === undefined) {
       resolve();
     } else {

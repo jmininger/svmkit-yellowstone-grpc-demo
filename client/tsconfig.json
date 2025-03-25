@@ -3,8 +3,8 @@
     "strict": true,
     "rootDir": ".",
     "outDir": "bin",
-    "target": "es2020",
-    "module": "esnext",
+    "target": "ESNext",
+    "module": "ESNext",
     "moduleResolution": "node",
     "sourceMap": true,
     "experimentalDecorators": true,
@@ -12,6 +12,7 @@
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
     "forceConsistentCasingInFileNames": true,
-    "esModuleInterop": true
+    "allowSyntheticDefaultImports": true
   }
 }
+
