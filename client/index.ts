@@ -10,7 +10,10 @@ import {
 } from '@solana-program/stake';
 import bs58 from 'bs58';
 
-const ACCOUNT_PK = "HFVLaumZ8XRaxNvr2srUSWinnwoaatwEbb1aEDAxoZQg";
+const ACCOUNT_PK = process.env.STAKE_PK;
+if (!ACCOUNT_PK) {
+  throw new Error('STAKE_PK environment variable is required');
+}
 
 const serverEndpoint = process.env.SERVER_ENDPOINT || "http://localhost:10000";
 // const token = process.env.TOKEN || "<your-token>";
