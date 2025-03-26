@@ -28,37 +28,19 @@ GRPC geyser.
 % pulumi up
 ```
 
-After succesfully deploying, run the following to get your stake account addres which you will need for a later part of this demo:
-```bash
-% pulumi stack output stake_account_key
+4. Subscribe to the stream
 ```
-
-4. Access the GRPC via Port Forwarding
-
-In the example, the deployed validator is running remotely, so you’ll need to forward the relevant ports to your local machine to test the GRPC geyser.
-
-Forward the ports to your local machine:
-
-```bash
-% ./ssh-to-host 0 -L 10000:localhost:10000
+grpcurl -plaintext -d '{"program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"}' 127.0.0.1:3030 vixen.stream.ProgramStreams/Subscribe
 ```
-You can now test the GRPC connection by connecting to `localhost:10000` from your local machine.
+(assumes the `grpcurl` tool is installed and that the vixen stream is running on port 3030)
 
-5. Run the client demo
-
-In another terminal, run the following:
-```bash
-% cd client
-% npm install 
-% STAKE_PK=$(pulumi stack output stake_account_key | jq -r .[] ) npm run client
+5. Create a token
+In another terminal, use the `spl-token` cli to create a token
 ```
-This spins up a client that connects to the geyser and waits for updates to the stake account.
-
-In the previous terminal (from step 4) enter the following:
-```bash
-% solana deactivate-stake <STAKE_ACCOUNT_FROM_STEP_3>
+spl-token create-token
 ```
-and watch in the other window as the client handles this change
+You should see the token mint address in the stream
+
 
 6. (Optional) Tear down the example
 
