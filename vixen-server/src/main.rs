@@ -1,68 +1,41 @@
-use std::future::Future;
+use std::{fs::read_to_string, path::PathBuf};
 
-use yellowstone_vixen::{
-    self as vixen,
-    vixen_core::{self},
-    HandlerResult, Pipeline,
+use clap::Parser as _;
+use color_eyre::Result;
+use yellowstone_vixen::{self as vixen, proto::parser, vixen_core::proto::Proto};
+use yellowstone_vixen_parser::{
+    token_extension_program::{
+        AccountParser as TokenExtensionProgramAccParser,
+        InstructionParser as TokenExtensionProgramIxParser,
+    },
+    token_program::{
+        AccountParser as TokenProgramAccParser, InstructionParser as TokenProgramIxParser,
+    },
 };
 
-fn id() -> vixen_core::Pubkey {
-    "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
-        .parse()
-        .unwrap()
+#[derive(clap::Parser)]
+#[command(version, author, about)]
+pub struct Opts {
+    #[arg(long, short)]
+    config: PathBuf,
 }
 
-#[derive(Debug)]
-pub enum StakeAccountUpdate {
-    Account,
-}
+#[tokio::main]
+async fn main() -> Result<()> {
+    color_eyre::install()?;
 
-#[derive(Debug)]
-pub struct Parser;
-
-impl vixen_core::Parser for Parser {
-    type Input = vixen_core::AccountUpdate;
-    type Output = StakeAccountUpdate;
-
-    fn id(&self) -> std::borrow::Cow<str> {
-        "test_stream::Parser".into()
-    }
-
-    fn prefilter(&self) -> vixen_core::Prefilter {
-        vixen_core::Prefilter::builder()
-            .account_owners([id()])
-            .build()
-            .unwrap()
-    }
-
-    async fn parse(&self, value: &Self::Input) -> vixen_core::ParseResult<Self::Output> {
-        todo!();
-    }
-}
-
-#[derive(Debug)]
-struct PrinterHandler;
-impl vixen::handler::Handler<StakeAccountUpdate> for PrinterHandler {
-    fn handle(&self, value: &StakeAccountUpdate) -> impl Future<Output = HandlerResult<()>> + Send {
-        async move {
-            println!("Received {:?}", value);
-            Ok(())
-        }
-    }
-}
-
-impl vixen_core::ProgramParser for Parser {
-    fn program_id(&self) -> vixen_core::Pubkey {
-        id()
-    }
-}
-
-fn main() {
-    let config = std::fs::read_to_string("config.toml").expect("Error reading config file");
+    let Opts { config } = Opts::parse();
+    let config = read_to_string(config).expect("Error reading config file");
     let config = toml::from_str(&config).expect("Error parsing config");
 
-    vixen::Runtime::builder()
-        .account(Pipeline::new(Parser, [PrinterHandler]))
+    vixen::stream::Server::builder()
+        .descriptor_set(parser::DESCRIPTOR_SET)
+        .account(Proto::new(TokenExtensionProgramAccParser))
+        .account(Proto::new(TokenProgramAccParser))
+        .instruction(Proto::new(TokenProgramIxParser))
+        .instruction(Proto::new(TokenExtensionProgramIxParser))
         .build(config)
-        .run();
+        .try_run_async()
+        .await?;
+    Ok(())
 }
