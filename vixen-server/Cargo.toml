@@ -1,0 +1,12 @@
+[package]
+name = "vixen-client"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+prost = "0.13.5"
+toml = "0.8.20"
+yellowstone-vixen = { version = "0.1.0", features = ["stream"] }
+
+[build-dependencies]
+prost-build = "0.13.1"
