@@ -22,13 +22,21 @@ GRPC geyser.
 % pulumi stack init dev-node-grpc
 ```
 
-3. Run `pulumi up`
+3. Build the vixen-stream docker image
+
+```
+% cd vixen-server
+% docker build --env-file .env -t vixen-server .
+% docker save vixen-server:latest| gzip >> vixen-server.tar.gz
+```
+
+4. Run `pulumi up`
 
 ```
 % pulumi up
 ```
 
-4. Subscribe to the stream
+5. Subscribe to the stream
 ```
 grpcurl -plaintext -d '{"program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"}' 127.0.0.1:3030 vixen.stream.ProgramStreams/Subscribe
 ```

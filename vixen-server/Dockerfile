@@ -24,18 +24,11 @@ RUN cargo build --release
 # Stage 2: Create the runtime image
 FROM debian:bookworm-slim
 
-# Install any runtime dependencies (if needed, e.g., for gRPC)
-# RUN apt-get update && apt-get install -y libssl-dev && rm -rf /var/lib/apt/lists/*
-
 # Set working directory
 WORKDIR /app
 
 # Copy the binary from the builder stage
 COPY --from=builder /usr/src/app/target/release/vixen-server /app/
-
-# Set default environment variables
-ENV PORT=8000
-ENV CONFIG_FILE=/app/config.json
 
 # Expose the port your gRPC server uses
 EXPOSE ${PORT}
