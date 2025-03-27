@@ -7,7 +7,7 @@ import * as tmp from "tmp";
 import * as toml from "@iarna/toml";
 
 import { externalSg, internalSg } from "./network";
-import { instance } from "./aws";
+import { instance as nodeInstance } from "./aws";
 
 const config = new pulumi.Config("vixen");
 const instanceType = config.get("instanceType") ?? "t3.medium";

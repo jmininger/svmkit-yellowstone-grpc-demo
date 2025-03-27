@@ -24,6 +24,7 @@ pub struct Opts {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    println!("Starting Vixen process...");
     color_eyre::install()?;
 
     let Opts { config } = Opts::parse();

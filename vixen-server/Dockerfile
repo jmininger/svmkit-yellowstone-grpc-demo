@@ -34,4 +34,4 @@ COPY --from=builder /usr/src/app/target/release/vixen-server /app/
 # EXPOSE ${PORT}
 
 # Run the application with config file argument
-CMD ["/app/vixen-server", "--config", "${CONFIG_FILE}"]
+CMD /app/vixen-server --config ${CONFIG_FILE}
