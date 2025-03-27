@@ -3,6 +3,7 @@ import * as svmkit from "@svmkit/pulumi-svmkit";
 
 import { sshKey, instance } from "./aws";
 import { GRPC_CONFIG_PATH } from "./grpc_geyser";
+import { vixenInstance, vixenPublicIp, sshKey as vixenSshKey } from "./vixen-server";
 
 const RPC_PORT = 8899;
 const GOSSIP_PORT = 8001;
@@ -154,9 +155,9 @@ const tuner = new svmkit.tuner.Tuner(
 );
 
 // Expose information required to SSH to the validator host.
-export const nodes_name = ["validator"];
-export const nodes_public_ip = [instance.publicIp];
-export const nodes_private_key = [sshKey.privateKeyOpenssh];
+export const nodes_name = ["validator", "vixenInstance"];
+export const nodes_public_ip = [instance.publicIp, vixeInstance.publicIp];
+export const nodes_private_key = [sshKey.privateKeyOpenssh, vixenSshKey.privateKeyOpenssh];
 export const tuner_params = tunerParams;
 export const stake_account_key = [stakeAccountKey.publicKey];
 export const vote_account_key = [voteAccountKey.publicKey];
