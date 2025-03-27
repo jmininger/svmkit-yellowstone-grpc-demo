@@ -3,7 +3,9 @@ import { remote, types } from "@pulumi/command";
 import * as aws from "@pulumi/aws";
 import * as tls from "@pulumi/tls";
 import * as fs from "fs";
-import * as toml from "toml";
+import * as tmp from "tmp";
+import * as toml from "@iarna/toml";
+
 import { externalSg, internalSg } from "./network";
 import { instance } from "./aws";
 
@@ -46,28 +48,28 @@ aws.ec2.getAmi({
 
 const stackName = pulumi.getStack();
 
-interface VixenConfig {
-  yellowstone?: {
-    endpoint?: string;
-  };
-}
-
-// TODO: Better way to do this
-function readGrpcSocketSync(newEndpoint) {
-  const fileContent = fs.readFileSync(tomlFrom, 'utf-8');
-  const config = toml.parse(fileContent) as VixenConfig;
-  config.yellowstone.endpoint = newEndpoint;
-  const updatedToml = toml.stringify(config);
-  const tmpobj = tmp.fileSync();
-  console.log('File: ', tmpobj.name);
-  console.log('Updated TOML: ', updatedToml);
-  fs.writeFile(tmp, updatedToml, 'utf-8');
+function readGrpcSocketSync(newEndpoint:string) : string{
+  const fileContent: string = fs.readFileSync(tomlFrom, 'utf-8');
+  const config: any = toml.parse(fileContent); // Using any since TOML config structure isn't strictly defined
+  if (!config.yellowstone) {
+      config.yellowstone = {};
+  }
+  config['yellowstone']['endpoint'] = newEndpoint;
+  const updatedToml: string = toml.stringify(config);
+  const tmpobj: tmp.FileResult = tmp.fileSync();
+  fs.writeFileSync(tmpobj.name, updatedToml, 'utf-8');
   return tmpobj.name;
 }
-const updatedToml = readGrpcSocketSync(grpcAddress);
+const updatedToml = grpcAddress.apply((addr) => readGrpcSocketSync(addr));
+
 
 // User data script to install Docker and run the container
 const userData = `#!/bin/bash
+set -e  # Exit on error
+# Redirect all output to a log file for debugging
+exec > /var/log/userdata.log 2>&1
+echo "Starting UserData script at $(date)"
+
 # Update system and install Docker
 apt-get update -y
 apt-get install -y \
