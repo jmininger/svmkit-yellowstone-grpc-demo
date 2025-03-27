@@ -128,7 +128,8 @@ const configCopy = new remote.CopyFile("vixen-config-copy", {
 const dockerRunCmd = `cd ${imgTo} && \
     gunzip -c vixen-server.tar.gz | docker load && \
     docker run -d \
-    -e CONFIG_FILE=/home/admin/Vixen.toml \
+    -e CONFIG_FILE=/config/Vixen.toml \
+    -v /home/admin/Vixen.toml:/config/Vixen.toml \
     -p ${VIXEN_PORT}:${VIXEN_PORT} \
     vixen-server:latest`;
 
