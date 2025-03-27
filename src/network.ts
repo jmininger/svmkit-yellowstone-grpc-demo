@@ -2,10 +2,9 @@ import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 
 const stackName = pulumi.getStack();
-export const VIXEN_PORT = 8000;
 
 export const externalSg = new aws.ec2.SecurityGroup("external-access", {
-  description: "Allow external SSH access to all of the nodes, and access to the VIXEN_PORT",
+  description: "Allow external SSH access to all of the nodes",
   ingress: [
     {
       protocol: "tcp",
@@ -13,7 +12,7 @@ export const externalSg = new aws.ec2.SecurityGroup("external-access", {
       toPort: 22,
       cidrBlocks: ["0.0.0.0/0"],
     },
-    { protocol: "tcp", fromPort: VIXEN_PORT, toPort: VIXEN_PORT, cidrBlocks: ["0.0.0.0/0"] },
+    // { protocol: "tcp", fromPort: VIXEN_PORT, toPort: VIXEN_PORT, cidrBlocks: ["0.0.0.0/0"] },
   ],
   egress: [
     {
@@ -49,4 +48,4 @@ export const internalSg = new aws.ec2.SecurityGroup("internal-access", {
   tags: {
     Stack: stackName,
   },
-}); 
+});

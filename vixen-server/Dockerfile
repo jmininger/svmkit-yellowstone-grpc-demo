@@ -31,7 +31,7 @@ WORKDIR /app
 COPY --from=builder /usr/src/app/target/release/vixen-server /app/
 
 # Expose the port your gRPC server uses
-EXPOSE ${PORT}
+# EXPOSE ${PORT}
 
 # Run the application with config file argument
 CMD ["/app/vixen-server", "--config", "${CONFIG_FILE}"]

@@ -1,6 +1,10 @@
 # This is an example TOML configuration file for Yellowstone Vixen.
 # Copy to Vixen.toml and them modify as needed.
 
+[grpc]
+# The endpoint of the gRPC server.
+address = "127.0.0.1:9000"
+
 [yellowstone]
 # The endpoint of the dragon's mouth stream.
 # This is the URL where the stream can be accessed.

@@ -2,11 +2,14 @@ import * as pulumi from "@pulumi/pulumi";
 import { remote, types } from "@pulumi/command";
 import * as aws from "@pulumi/aws";
 import * as tls from "@pulumi/tls";
-import { externalSg, internalSg, VIXEN_PORT } from "./network";
+import { externalSg, internalSg } from "./network";
 
 const config = new pulumi.Config("vixen");
 const instanceType = config.get("instanceType") ?? "t3.medium";
 const instanceArch = config.get("instanceArch") ?? "x86_64";
+const imgFrom = config.require("docker-payload")!;
+const tomlFrom = config.require("vixen-toml")!;
+const VIXEN_PORT = config.getNumber("vixen-port") ?? 9000;
 
 // Setup a local SSH private key, stored inside Pulumi.
 export const sshKey = new tls.PrivateKey("vixen-ssh-key", {
@@ -69,12 +72,11 @@ export const vixenInstance = new aws.ec2.Instance("vixen-server", {
 });
 
 // Export the public IP of the instance
-export const publicIp = vixenInstance.publicIp; 
+export const vixenPublicIp = vixenInstance.publicIp;
 
 // Set up source and target of the remote copy.
-const from = config.require("docker-payload")!;
-const archive = new pulumi.asset.FileArchive(from);
-const to = "/home/admin/"
+const archive = new pulumi.asset.FileArchive(imgFrom);
+const imgTo = "/home/admin/"
 
 const connection = {
   host: vixenInstance.publicDns,
@@ -82,15 +84,26 @@ const connection = {
   privateKey: sshKey.privateKeyOpenssh,
 };
 // Copy the files to the remote.
-const copy = new remote.CopyToRemote("copy", {
+const dockerCopy = new remote.CopyToRemote("docker-image-copy", {
     connection,
     source: archive,
-    remotePath: to,
+    remotePath: imgTo,
 });
 
+
+const vixenTomlAsset = new pulumi.asset.FileArchive(VIXEN_CONFIG);
+const configCopy = new remote.CopyToRemote("vixen-config-copy", {
+  connection,
+  source: vixenTomlAsset,
+  remotePath: "/home/admin/Vixen.toml",
+}, { dependsOn: dockerCopy });
+
+
+
 const dockerRunCmd = `cd ${to} && \
-    gunzip -c docker-payload.tar.gz | docker load && \
+    gunzip -c vixen-server.tar.gz | docker load && \
     docker run -d \
+    -e CONFIG_FILE=/home/admin/Vixen.toml \
     -p ${VIXEN_PORT}:${VIXEN_PORT} \
     vixen-server:latest`;
 
@@ -98,4 +111,5 @@ const dockerRun = new remote.Command("docker-run", {
   connection,
   create: dockerRunCmd,
   triggers: [archive],
-}, { dependsOn: copy });
+}, { dependsOn: dockerCopy });
+

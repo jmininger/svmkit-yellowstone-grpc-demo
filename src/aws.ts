@@ -9,7 +9,6 @@ import { externalSg, internalSg } from "./network";
 const nodeConfig = new pulumi.Config("node");
 const instanceType = nodeConfig.get("instanceType") ?? "t3.2xlarge";
 const instanceArch = nodeConfig.get("instanceArch") ?? "x86_64";
-const VIXEN_PORT = 8000;
 
 // Setup a local SSH private key, stored inside Pulumi.
 export const sshKey = new tls.PrivateKey("ssh-key", {
