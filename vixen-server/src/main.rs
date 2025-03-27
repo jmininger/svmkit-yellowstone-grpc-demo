@@ -27,7 +27,8 @@ async fn main() -> Result<()> {
     color_eyre::install()?;
 
     let Opts { config } = Opts::parse();
-    let config = read_to_string(config).expect("Error reading config file");
+    let config =
+        read_to_string(&config).expect(&format!("Error reading config file at {:?}", config));
     let config: StreamConfig<_> = toml::from_str(&config).expect("Error parsing config");
 
     println!("Starting server on port {}...", config.grpc.address);
