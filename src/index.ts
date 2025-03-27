@@ -156,7 +156,7 @@ const tuner = new svmkit.tuner.Tuner(
 
 // Expose information required to SSH to the validator host.
 export const nodes_name = ["validator", "vixenInstance"];
-export const nodes_public_ip = [instance.publicIp, vixeInstance.publicIp];
+export const nodes_public_ip = [instance.publicIp, vixenInstance.publicIp];
 export const nodes_private_key = [sshKey.privateKeyOpenssh, vixenSshKey.privateKeyOpenssh];
 export const tuner_params = tunerParams;
 export const stake_account_key = [stakeAccountKey.publicKey];

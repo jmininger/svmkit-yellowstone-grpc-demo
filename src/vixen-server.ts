@@ -2,7 +2,10 @@ import * as pulumi from "@pulumi/pulumi";
 import { remote, types } from "@pulumi/command";
 import * as aws from "@pulumi/aws";
 import * as tls from "@pulumi/tls";
+import * as fs from "fs";
+import * as toml from "toml";
 import { externalSg, internalSg } from "./network";
+import { instance } from "./aws";
 
 const config = new pulumi.Config("vixen");
 const instanceType = config.get("instanceType") ?? "t3.medium";
@@ -10,6 +13,9 @@ const instanceArch = config.get("instanceArch") ?? "x86_64";
 const imgFrom = config.require("docker-payload")!;
 const tomlFrom = config.require("vixen-toml")!;
 const VIXEN_PORT = config.getNumber("vixen-port") ?? 9000;
+const YELLOWSTONE_GRPC_PORT = config.getNumber("yellowstone-port") ?? 10000;
+
+const grpcAddress = nodeInstance.publicIp.apply(ip => `${ip}:${YELLOWSTONE_GRPC_PORT}`);
 
 // Setup a local SSH private key, stored inside Pulumi.
 export const sshKey = new tls.PrivateKey("vixen-ssh-key", {
@@ -39,6 +45,26 @@ aws.ec2.getAmi({
 ).id;
 
 const stackName = pulumi.getStack();
+
+interface VixenConfig {
+  yellowstone?: {
+    endpoint?: string;
+  };
+}
+
+// TODO: Better way to do this
+function readGrpcSocketSync(newEndpoint) {
+  const fileContent = fs.readFileSync(tomlFrom, 'utf-8');
+  const config = toml.parse(fileContent) as VixenConfig;
+  config.yellowstone.endpoint = newEndpoint;
+  const updatedToml = toml.stringify(config);
+  const tmpobj = tmp.fileSync();
+  console.log('File: ', tmpobj.name);
+  console.log('Updated TOML: ', updatedToml);
+  fs.writeFile(tmp, updatedToml, 'utf-8');
+  return tmpobj.name;
+}
+const updatedToml = readGrpcSocketSync(grpcAddress);
 
 // User data script to install Docker and run the container
 const userData = `#!/bin/bash
@@ -91,16 +117,13 @@ const dockerCopy = new remote.CopyToRemote("docker-image-copy", {
 });
 
 
-const vixenTomlAsset = new pulumi.asset.FileArchive(VIXEN_CONFIG);
-const configCopy = new remote.CopyToRemote("vixen-config-copy", {
+const configCopy = new remote.CopyFile("vixen-config-copy", {
   connection,
-  source: vixenTomlAsset,
+  localPath: updatedToml,
   remotePath: "/home/admin/Vixen.toml",
 }, { dependsOn: dockerCopy });
 
-
-
-const dockerRunCmd = `cd ${to} && \
+const dockerRunCmd = `cd ${imgTo} && \
     gunzip -c vixen-server.tar.gz | docker load && \
     docker run -d \
     -e CONFIG_FILE=/home/admin/Vixen.toml \
@@ -111,5 +134,5 @@ const dockerRun = new remote.Command("docker-run", {
   connection,
   create: dockerRunCmd,
   triggers: [archive],
-}, { dependsOn: dockerCopy });
+}, { dependsOn: [dockerCopy, vixenInstance] });
 
