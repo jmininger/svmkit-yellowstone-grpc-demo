@@ -26,7 +26,7 @@ GRPC geyser.
 
 ```
 % cd vixen-server
-% docker build --env-file .env -t vixen-server .
+% docker build -t vixen-server .
 % docker save vixen-server:latest| gzip >> vixen-server.tar.gz
 ```
 

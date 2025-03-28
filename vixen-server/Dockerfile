@@ -24,6 +24,9 @@ RUN cargo build --release
 # Stage 2: Create the runtime image
 FROM debian:bookworm-slim
 
+# Install CA certificates
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+
 # Set working directory
 WORKDIR /app
 
@@ -34,4 +37,4 @@ COPY --from=builder /usr/src/app/target/release/vixen-server /app/
 # EXPOSE ${PORT}
 
 # Run the application with config file argument
-CMD /app/vixen-server --config ${CONFIG_FILE}
+CMD /app/vixen-server --config $CONFIG_FILE
