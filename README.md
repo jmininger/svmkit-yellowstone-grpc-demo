@@ -39,6 +39,7 @@ GRPC geyser.
 5. Subscribe to the stream
 ```
 grpcurl -plaintext -d '{"program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"}' 127.0.0.1:3030 vixen.stream.ProgramStreams/Subscribe
+grpcurl -plaintext -d '{"program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"}' 127.0.0.1:9000 vixen.stream.ProgramStreams/Subscribe
 ```
 (assumes the `grpcurl` tool is installed and that the vixen stream is running on port 3030)
 

@@ -3,7 +3,7 @@
 
 [grpc]
 # The endpoint of the gRPC server.
-address = "127.0.0.1:9000"
+address = "0.0.0.0:9000"
 
 [yellowstone]
 # The endpoint of the dragon's mouth stream.
