@@ -2,7 +2,7 @@ import * as pulumi from "@pulumi/pulumi";
 import * as svmkit from "@svmkit/pulumi-svmkit";
 
 import { sshKey, instance } from "./validator";
-import { GRPC_CONFIG_PATH } from "./grpc_geyser";
+import { GRPC_CONFIG_PATH, allowGrpcPort} from "./grpc_geyser";
 import { vixenInstance, vixenPublicIp, sshKey as vixenSshKey } from "./vixen-server";
 
 const RPC_PORT = 8899;
@@ -154,6 +154,10 @@ const tuner = new svmkit.tuner.Tuner(
     dependsOn: [instance],
   },
 );
+
+// Expose yellowstone-grpc port so that it can interact with vixen vixen-server
+// Needs to depend on validator bc validator sets up ufw
+const firewallCmd = allowGrpcPort(connection, [validator, vixenInstance]);
 
 // Expose information required to SSH to the validator host.
 export const nodes_name = ["validator", "vixenInstance"];
