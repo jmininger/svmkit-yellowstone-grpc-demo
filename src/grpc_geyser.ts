@@ -23,6 +23,7 @@ if (yCfgJson["libpath"] !== GRPC_PLUGIN_PATH) {
   process.exit(1);
 }
 
+// TODO: Port should be a config
 export const geyserSetupScriptContent = `
 # Download yellowstone-grpc geyser plugin
 set -e  # Exit on error

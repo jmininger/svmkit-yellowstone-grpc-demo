@@ -17,7 +17,7 @@ const tomlFrom = config.require("vixen-toml")!;
 const VIXEN_PORT = config.getNumber("vixen-port") ?? 9000;
 const YELLOWSTONE_GRPC_PORT = config.getNumber("yellowstone-port") ?? 10000;
 
-const grpcAddress = nodeInstance.privateIp.apply(ip => `${ip}:${YELLOWSTONE_GRPC_PORT}`);
+const grpcAddress = nodeInstance.privateIp.apply(ip => `http://${ip}:${YELLOWSTONE_GRPC_PORT}`);
 
 // Setup a local SSH private key, stored inside Pulumi.
 export const sshKey = new tls.PrivateKey("vixen-ssh-key", {

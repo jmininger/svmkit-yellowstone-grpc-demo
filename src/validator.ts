@@ -6,9 +6,9 @@ import * as fs from "fs";
 import { geyserSetupScriptContent } from "./grpc_geyser";
 import { externalSg, internalSg } from "./network";
 
-const nodeConfig = new pulumi.Config("node");
-const instanceType = nodeConfig.get("instanceType") ?? "t3.2xlarge";
-const instanceArch = nodeConfig.get("instanceArch") ?? "x86_64";
+const validatorConfig = new pulumi.Config("validator-instance");
+const instanceType = validatorConfig.get("instanceType") ?? "t3.2xlarge";
+const instanceArch = validatorConfig.get("instanceArch") ?? "x86_64";
 
 // Setup a local SSH private key, stored inside Pulumi.
 export const sshKey = new tls.PrivateKey("ssh-key", {

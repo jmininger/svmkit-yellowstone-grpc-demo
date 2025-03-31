@@ -1,7 +1,7 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as svmkit from "@svmkit/pulumi-svmkit";
 
-import { sshKey, instance } from "./aws";
+import { sshKey, instance } from "./validator";
 import { GRPC_CONFIG_PATH } from "./grpc_geyser";
 import { vixenInstance, vixenPublicIp, sshKey as vixenSshKey } from "./vixen-server";
 
@@ -72,6 +72,7 @@ const faucet = new svmkit.faucet.Faucet(
   { connection: connection, keypair: faucetKey.json, flags: {} },
   { dependsOn: [genesis] },
 );
+
 // Create the environment configuration
 const solEnv = {
   rpcURL: instance.privateIp.apply((ip) => `http://${ip}:${RPC_PORT}`),
