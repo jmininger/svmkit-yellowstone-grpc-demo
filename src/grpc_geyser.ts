@@ -27,12 +27,12 @@ if (yCfgJson["libpath"] !== GRPC_PLUGIN_PATH) {
   );
   process.exit(1);
 }
-if (yCfgJson["port"] !== GRPC_PORT) {
-  console.error(
-    `yellowstone-config.json currently indicates that the port is set to ${yCfgJson["port"]}, but its true port on the validator is ${GRPC_PORT}. Please update the port in yellowstone-config.json to match the true port on the validator.`,
-  );
-  process.exit(1);
-}
+// if (yCfgJson["port"] !== GRPC_PORT) {
+//   console.error(
+//     `yellowstone-config.json currently indicates that the port is set to ${yCfgJson["port"]}, but its true port on the validator is ${GRPC_PORT}. Please update the port in yellowstone-config.json to match the true port on the validator.`,
+//   );
+//   process.exit(1);
+// }
 
 // TODO: Port should be a config
 export const geyserSetupScriptContent = `
@@ -72,9 +72,9 @@ ${yellowstoneConfig}
 EOF
 `;
 
-export function allowGrpcPort(connection: any, deps: any) types.Command {
+export function allowGrpcPort(connection: any, deps: any) : any {
     return new remote.Command("grpc_firewall", {
       connection,
-      create: `ufw allow ${GRPC_PORT}/tcp`
+      create: `sudo ufw allow ${GRPC_PORT}/tcp`
   }, {dependsOn: deps});
 }
