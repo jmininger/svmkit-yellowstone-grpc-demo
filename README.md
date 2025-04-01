@@ -29,29 +29,50 @@ GRPC geyser.
 % docker build -t vixen-server .
 % docker save vixen-server:latest| gzip >> vixen-server.tar.gz
 ```
+4. Set pulumi config
+Use `pulumi config set <key:val>` to set the following configuration values:
 
-4. Run `pulumi up`
+| Name                       | Description                                                       | Default Value |
+| :------------------------- | :---------------------------------------------------------------- |:------------- |
+| aws:region                 | The AWS region to launch the cluster in.                          | us-east-1
+| vixen:docker-payload       | The path to the vixen-server docker image tarball.                |
+| vixen:vixen-toml           | The path to the vixen.toml file.                                  |
+| vixen:vixen-port           | The port to run the vixen server on.                              | 9000
+| validator:instanceType     | The AWS instance type to use for all of the nodes.                | t3.medium
+| validator:instanceArch     | The AWS instance architecture type to use for the AMI lookup.     | x86_64
+| yellowstone:grpc-port      | The port to run the yellowstone gRPC server on                    | 10000
+
+5. Run `pulumi up`
 
 ```
 % pulumi up
 ```
 
-5. Subscribe to the stream
+6. Port forward to the vixen docker container and subscribe to the stream
+In one terminal:
 ```
-grpcurl -plaintext -d '{"program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"}' 127.0.0.1:3030 vixen.stream.ProgramStreams/Subscribe
+./ssh-to-host 1 -L 9000:localhost:9000
+```
+Then in another terminal, using grpcurl:
+(assumes the `grpcurl` tool is installed and that the vixen stream is running on port 9000)
+```
 grpcurl -plaintext -d '{"program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"}' 127.0.0.1:9000 vixen.stream.ProgramStreams/Subscribe
 ```
-(assumes the `grpcurl` tool is installed and that the vixen stream is running on port 3030)
 
-5. Create a token
-In another terminal, use the `spl-token` cli to create a token
+7. Create a token
+Connect to the remote solana validator. We can port forward to the solana validator and then use the
+`spl-token` cli if the local solana cli config is set to use localhost:8899
 ```
+./ssh-to-host 0 -L 8899:localhost:8899
+```
+Then in another terminal, use the `spl-token` cli to create a token
+```
+solana faucet airdrop 100
 spl-token create-token
 ```
-You should see the token mint address in the stream
+You should see the token mint address in the stream in the vixen terminal
 
-
-6. (Optional) Tear down the example
+8. (Optional) Tear down the example
 
 ```bash
 % pulumi down

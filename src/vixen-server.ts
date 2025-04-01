@@ -8,6 +8,7 @@ import * as toml from "@iarna/toml";
 
 import { externalSg, internalSg } from "./network";
 import { instance as nodeInstance } from "./validator";
+import { GRPC_PORT as YELLOWSTONE_GRPC_PORT } from "./grpc_geyser";
 
 const config = new pulumi.Config("vixen");
 const instanceType = config.get("instanceType") ?? "t3.medium";
@@ -15,7 +16,6 @@ const instanceArch = config.get("instanceArch") ?? "x86_64";
 const imgFrom = config.require("docker-payload")!;
 const tomlFrom = config.require("vixen-toml")!;
 const VIXEN_PORT = config.getNumber("vixen-port") ?? 9000;
-const YELLOWSTONE_GRPC_PORT = config.getNumber("yellowstone-port") ?? 10000;
 
 const grpcAddress = nodeInstance.privateIp.apply(ip => `http://${ip}:${YELLOWSTONE_GRPC_PORT}`);
 

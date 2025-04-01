@@ -6,7 +6,7 @@ import * as fs from "fs";
 import { geyserSetupScriptContent } from "./grpc_geyser";
 import { externalSg, internalSg } from "./network";
 
-const validatorConfig = new pulumi.Config("validator-instance");
+const validatorConfig = new pulumi.Config("validator");
 const instanceType = validatorConfig.get("instanceType") ?? "t3.2xlarge";
 const instanceArch = validatorConfig.get("instanceArch") ?? "x86_64";
 

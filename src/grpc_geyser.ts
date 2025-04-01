@@ -3,7 +3,7 @@ import { remote, types } from "@pulumi/command";
 import * as fs from "fs";
 
 const config = new pulumi.Config("yellowstone");
-const GRPC_PORT = config.getNumber("grpc-port") ?? 10000;
+export const GRPC_PORT = config.getNumber("grpc-port") ?? 10000;
 
 // Make sure we grab the ubuntu 22 version of the release so that it works on our machine
 const assetName =
