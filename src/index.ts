@@ -1,9 +1,10 @@
 import * as pulumi from "@pulumi/pulumi";
+import { remote, types } from "@pulumi/command";
 import * as svmkit from "@svmkit/pulumi-svmkit";
 
 import { sshKey, instance } from "./validator";
 import { GRPC_CONFIG_PATH, allowGrpcPort} from "./grpc_geyser";
-import { vixenInstance, vixenPublicIp, sshKey as vixenSshKey, vixenConnection, dockerRunCmd, waitForDocker} from "./vixen-server";
+import { vixenInstance, vixenPublicIp, sshKey as vixenSshKey, connection as vixenConnection, dockerRunCmd, waitForDocker} from "./vixen-server";
 
 const RPC_PORT = 8899;
 const GOSSIP_PORT = 8001;
@@ -160,7 +161,7 @@ const tuner = new svmkit.tuner.Tuner(
 const firewallCmd = allowGrpcPort(connection, [validator, vixenInstance]);
 
 const dockerRun = new remote.Command("docker-run", {
-  vixenConnection,
+  connection: vixenConnection,
   create: dockerRunCmd,
 }, { dependsOn: [waitForDocker, firewallCmd] });
 
