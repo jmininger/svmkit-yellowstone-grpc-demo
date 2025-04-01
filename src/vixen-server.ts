@@ -86,6 +86,9 @@ usermod -aG docker admin
 # Create directory for docker payload
 mkdir -p /home/admin
 chown admin:admin /home/admin
+
+touch /home/admin/userdata-done  # Marker file
+echo "UserData completed at $(date)"
 `;
 
 export const vixenInstance = new aws.ec2.Instance("vixen-server", {
@@ -125,9 +128,20 @@ const configCopy = new remote.CopyFile("vixen-config-copy", {
   remotePath: "/home/admin/Vixen.toml",
 }, { dependsOn: dockerCopy });
 
+// Wait for the docker service to be ready by checking for a file
+// This is only necessary bc the userData script actually runs in parallel to other
+// pulumi cmds even though the other scripts are supposed to depend on it
+const waitForDockerCmd = `until [ -f /home/admin/userdata-done ]; do sleep 1; done`;
+const waitForDocker = new remote.Command("docker-wait", {
+  connection,
+  create: waitForDockerCmd,
+  triggers: [],
+}, { dependsOn: [vixenInstance ] });
+
+
 const dockerRunCmd = `cd ${imgTo} && \
     gunzip -c vixen-server.tar.gz | docker load && \
-    sudo docker run -d \
+    docker run -d \
     -e CONFIG_FILE=/config/Vixen.toml \
     -v /home/admin/Vixen.toml:/config/Vixen.toml \
     -p ${VIXEN_PORT}:${VIXEN_PORT} \
