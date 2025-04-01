@@ -151,5 +151,5 @@ const dockerRun = new remote.Command("docker-run", {
   connection,
   create: dockerRunCmd,
   triggers: [archive],
-}, { dependsOn: [dockerCopy, vixenInstance] });
+}, { dependsOn: [waitForDocker] });
 
