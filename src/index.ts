@@ -3,7 +3,7 @@ import * as svmkit from "@svmkit/pulumi-svmkit";
 
 import { sshKey, instance } from "./validator";
 import { GRPC_CONFIG_PATH, allowGrpcPort} from "./grpc_geyser";
-import { vixenInstance, vixenPublicIp, sshKey as vixenSshKey } from "./vixen-server";
+import { vixenInstance, vixenPublicIp, sshKey as vixenSshKey, vixenConnection, dockerRunCmd, waitForDocker} from "./vixen-server";
 
 const RPC_PORT = 8899;
 const GOSSIP_PORT = 8001;
@@ -158,6 +158,11 @@ const tuner = new svmkit.tuner.Tuner(
 // Expose yellowstone-grpc port so that it can interact with vixen vixen-server
 // Needs to depend on validator bc validator sets up ufw
 const firewallCmd = allowGrpcPort(connection, [validator, vixenInstance]);
+
+const dockerRun = new remote.Command("docker-run", {
+  vixenConnection,
+  create: dockerRunCmd,
+}, { dependsOn: [waitForDocker, firewallCmd] });
 
 // Expose information required to SSH to the validator host.
 export const nodes_name = ["validator", "vixenInstance"];

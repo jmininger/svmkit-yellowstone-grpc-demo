@@ -109,21 +109,21 @@ export const vixenPublicIp = vixenInstance.publicIp;
 const archive = new pulumi.asset.FileArchive(imgFrom);
 const imgTo = "/home/admin/"
 
-const connection = {
+export const vixenConnection = {
   host: vixenInstance.publicDns,
   user: "admin",
   privateKey: sshKey.privateKeyOpenssh,
 };
 // Copy the files to the remote.
 const dockerCopy = new remote.CopyToRemote("docker-image-copy", {
-    connection,
+    vixenConnection,
     source: archive,
     remotePath: imgTo,
 });
 
 
 const configCopy = new remote.CopyFile("vixen-config-copy", {
-  connection,
+  vixenConnection,
   localPath: updatedToml,
   remotePath: "/home/admin/Vixen.toml",
 }, { dependsOn: dockerCopy });
@@ -132,14 +132,14 @@ const configCopy = new remote.CopyFile("vixen-config-copy", {
 // This is only necessary bc the userData script actually runs in parallel to other
 // pulumi cmds even though the other scripts are supposed to depend on it
 const waitForDockerCmd = `until [ -f /home/admin/userdata-done ]; do sleep 1; done`;
-const waitForDocker = new remote.Command("docker-wait", {
-  connection,
+export const waitForDocker = new remote.Command("docker-wait", {
+  vixenConnection,
   create: waitForDockerCmd,
   triggers: [],
 }, { dependsOn: [vixenInstance ] });
 
 
-const dockerRunCmd = `cd ${imgTo} && \
+export const dockerRunCmd = `cd ${imgTo} && \
     gunzip -c vixen-server.tar.gz | docker load && \
     docker run -d \
     -e CONFIG_FILE=/config/Vixen.toml \
@@ -147,9 +147,4 @@ const dockerRunCmd = `cd ${imgTo} && \
     -p ${VIXEN_PORT}:${VIXEN_PORT} \
     vixen-server:latest`;
 
-const dockerRun = new remote.Command("docker-run", {
-  connection,
-  create: dockerRunCmd,
-  triggers: [archive],
-}, { dependsOn: [waitForDocker] });
 
