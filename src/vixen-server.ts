@@ -146,10 +146,3 @@ export const dockerRunCmd = `cd ${imgTo} && \
     -v /home/admin/Vixen.toml:/config/Vixen.toml \
     -p ${VIXEN_PORT}:${VIXEN_PORT} \
     vixen-server:latest`;
-
-const dockerRun = new remote.Command("docker-run", {
-  connection,
-  create: dockerRunCmd,
-  triggers: [archive],
-}, { dependsOn: [waitForDocker] });
-
