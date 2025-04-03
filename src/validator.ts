@@ -4,10 +4,11 @@ import * as tls from "@pulumi/tls";
 import * as fs from "fs";
 
 import { geyserSetupScriptContent } from "./grpc_geyser";
+import { externalSg, internalSg } from "./network";
 
-const nodeConfig = new pulumi.Config("node");
-const instanceType = nodeConfig.get("instanceType") ?? "t3.2xlarge";
-const instanceArch = nodeConfig.get("instanceArch") ?? "x86_64";
+const validatorConfig = new pulumi.Config("validator");
+const instanceType = validatorConfig.get("instanceType") ?? "t3.2xlarge";
+const instanceArch = validatorConfig.get("instanceArch") ?? "x86_64";
 
 // Setup a local SSH private key, stored inside Pulumi.
 export const sshKey = new tls.PrivateKey("ssh-key", {
@@ -37,52 +38,6 @@ const ami = pulumi.output(
 ).id;
 
 const stackName = pulumi.getStack();
-
-const externalSg = new aws.ec2.SecurityGroup("external-access", {
-  description: "Allow external SSH access to all of the nodes",
-  ingress: [
-    {
-      protocol: "tcp",
-      fromPort: 0,
-      toPort: 22,
-      cidrBlocks: ["0.0.0.0/0"],
-    },
-  ],
-  egress: [
-    {
-      protocol: "-1",
-      fromPort: 0,
-      toPort: 0,
-      cidrBlocks: ["0.0.0.0/0"],
-    },
-  ],
-  tags: {
-    Stack: stackName,
-  },
-});
-
-const internalSg = new aws.ec2.SecurityGroup("internal-access", {
-  description: "Permissive internal traffic",
-  ingress: [
-    {
-      protocol: "-1",
-      fromPort: 0,
-      toPort: 0,
-      self: true,
-    },
-  ],
-  egress: [
-    {
-      protocol: "-1",
-      fromPort: 0,
-      toPort: 0,
-      cidrBlocks: ["0.0.0.0/0"],
-    },
-  ],
-  tags: {
-    Stack: stackName,
-  },
-});
 
 export const instance = new aws.ec2.Instance("instance", {
   ami,

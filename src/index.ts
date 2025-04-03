@@ -1,8 +1,10 @@
 import * as pulumi from "@pulumi/pulumi";
+import { remote, types } from "@pulumi/command";
 import * as svmkit from "@svmkit/pulumi-svmkit";
 
-import { sshKey, instance } from "./aws";
-import { GRPC_CONFIG_PATH } from "./grpc_geyser";
+import { sshKey, instance } from "./validator";
+import { GRPC_CONFIG_PATH, allowGrpcPort} from "./grpc_geyser";
+import { vixenInstance, vixenPublicIp, sshKey as vixenSshKey, connection as vixenConnection, dockerRunCmd, waitForDocker} from "./vixen-server";
 
 const RPC_PORT = 8899;
 const GOSSIP_PORT = 8001;
@@ -71,6 +73,7 @@ const faucet = new svmkit.faucet.Faucet(
   { connection: connection, keypair: faucetKey.json, flags: {} },
   { dependsOn: [genesis] },
 );
+
 // Create the environment configuration
 const solEnv = {
   rpcURL: instance.privateIp.apply((ip) => `http://${ip}:${RPC_PORT}`),
@@ -153,11 +156,20 @@ const tuner = new svmkit.tuner.Tuner(
   },
 );
 
+// Expose yellowstone-grpc port so that it can interact with vixen vixen-server
+// Needs to depend on validator bc validator sets up ufw
+const firewallCmd = allowGrpcPort(connection, [validator, vixenInstance]);
+
+const dockerRun = new remote.Command("docker-run", {
+  connection: vixenConnection,
+  create: dockerRunCmd,
+}, { dependsOn: [waitForDocker, firewallCmd] });
+
 // Expose information required to SSH to the validator host.
-export const nodes_name = ["validator"];
-export const nodes_public_ip = [instance.publicIp];
-export const nodes_private_key = [sshKey.privateKeyOpenssh];
-export const tuner_params = tunerParams;
+export const nodes_name = ["validator", "vixenInstance"];
+export const nodes_public_ip = [instance.publicIp, vixenInstance.publicIp];
+export const nodes_private_key = [sshKey.privateKeyOpenssh, vixenSshKey.privateKeyOpenssh];
+// export const tuner_params = tunerParams;
 export const stake_account_key = [stakeAccountKey.publicKey];
 export const vote_account_key = [voteAccountKey.publicKey];
 

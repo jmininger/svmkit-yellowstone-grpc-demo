@@ -1,4 +1,9 @@
+import * as pulumi from "@pulumi/pulumi";
+import { remote, types } from "@pulumi/command";
 import * as fs from "fs";
+
+const config = new pulumi.Config("yellowstone");
+export const GRPC_PORT = config.getNumber("grpc-port") ?? 10000;
 
 // Make sure we grab the ubuntu 22 version of the release so that it works on our machine
 const assetName =
@@ -22,7 +27,14 @@ if (yCfgJson["libpath"] !== GRPC_PLUGIN_PATH) {
   );
   process.exit(1);
 }
+// if (yCfgJson["port"] !== GRPC_PORT) {
+//   console.error(
+//     `yellowstone-config.json currently indicates that the port is set to ${yCfgJson["port"]}, but its true port on the validator is ${GRPC_PORT}. Please update the port in yellowstone-config.json to match the true port on the validator.`,
+//   );
+//   process.exit(1);
+// }
 
+// TODO: Port should be a config
 export const geyserSetupScriptContent = `
 # Download yellowstone-grpc geyser plugin
 set -e  # Exit on error
@@ -59,3 +71,10 @@ cat << 'EOF' > ${GRPC_CONFIG_PATH}
 ${yellowstoneConfig}
 EOF
 `;
+
+export function allowGrpcPort(connection: any, deps: any) : any {
+    return new remote.Command("grpc_firewall", {
+      connection,
+      create: `sudo ufw allow ${GRPC_PORT}/tcp`
+  }, {dependsOn: deps});
+}
