@@ -3,25 +3,50 @@ use solana_client::{
     rpc_client::RpcClient, rpc_config::RpcRequestAirdropConfig, rpc_response::Response,
 };
 use solana_sdk::{
-    commitment_config::CommitmentConfig, program_pack::Pack, signature::Keypair, signer::Signer,
-    system_instruction, transaction::Transaction,
+    commitment_config::CommitmentConfig, program_pack::Pack, pubkey::Pubkey, signature::Keypair,
+    signer::Signer, system_instruction, transaction::Transaction,
 };
-use spl_token::{
-    instruction::{initialize_mint, mint_to},
-    state::Mint,
-};
+use spl_token::{instruction::initialize_mint, state::Mint};
+use tracing::{error, info, info_span, Instrument};
+use tracing_subscriber::FmtSubscriber;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     color_eyre::install()?;
+    let subscriber = FmtSubscriber::builder().finish();
+    tracing::subscriber::set_global_default(subscriber)?;
 
+    let jid = tokio::spawn(async {
+        let span = info_span!("Mint Token");
+        let res = airdrop_and_mint_token().instrument(span).await;
+        if let Err(_e) = res {
+            error!("Error airdropping or minting token");
+        }
+    });
+
+    // let _span = info_span!("Vixen Client").entered();
+    jid.await?;
+
+    Ok(())
+}
+
+async fn airdrop_and_mint_token() -> Result<()> {
+    // TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
     let kp = Keypair::new();
-    println!("Public key: {}", kp.pubkey());
-
+    info!("Public key: {}", kp.pubkey());
     // Fund the Keypair
     let rpc_client = RpcClient::new("http://localhost:8899");
+    airdrop_new_address(kp.pubkey(), &rpc_client).await?;
+    // Create a new keypair for the mint
+    let mint_keypair = Keypair::new();
+    create_mint(&mint_keypair, &kp, &rpc_client).await?;
+
+    Ok(())
+}
+
+async fn airdrop_new_address(pubkey: Pubkey, rpc_client: &RpcClient) -> Result<()> {
     let signature = rpc_client.request_airdrop_with_config(
-        &kp.pubkey(),
+        &pubkey,
         1_000_000_000,
         RpcRequestAirdropConfig {
             recent_blockhash: None,
@@ -31,22 +56,20 @@ async fn main() -> Result<()> {
     let mut res: Response<bool> = rpc_client
         .confirm_transaction_with_commitment(&signature, CommitmentConfig::finalized())?;
     while !res.value {
-        println!("Sleeping");
         tokio::time::sleep(std::time::Duration::from_secs(1)).await;
         res = rpc_client
             .confirm_transaction_with_commitment(&signature, CommitmentConfig::finalized())?;
     }
+    Ok(())
+}
 
-    // Create a new keypair for the mint
-    let mint_keypair = Keypair::new();
+async fn create_mint(mint_keypair: &Keypair, kp: &Keypair, rpc_client: &RpcClient) -> Result<()> {
     let mint_pubkey = mint_keypair.pubkey();
     let decimals = 6; // e.g., 6 decimal places like USDC
 
     // Calculate minimum balance for rent exemption
     let rent = rpc_client.get_minimum_balance_for_rent_exemption(Mint::LEN)?;
-
-    println!("Mint keypair {}", mint_keypair.pubkey());
-    println!("RENT: {}", rent);
+    info!("Mint Address {}", mint_keypair.pubkey());
     // Create the mint account
     let create_account_ix = system_instruction::create_account(
         &kp.pubkey(),
@@ -67,8 +90,6 @@ async fn main() -> Result<()> {
 
     // Build and send the transaction
     let recent_blockhash = rpc_client.get_latest_blockhash()?;
-    let balance = rpc_client.get_balance(&kp.pubkey())?;
-    println!("Balance: {}", balance);
     let tx = Transaction::new_signed_with_payer(
         &[create_account_ix, initialize_mint_ix],
         Some(&kp.pubkey()),
@@ -76,9 +97,6 @@ async fn main() -> Result<()> {
         recent_blockhash,
     );
     let signature = rpc_client.send_and_confirm_transaction(&tx)?;
-    println!("Mint created with signature: {}", signature);
-
-    // TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
-
+    info!("Mint created with signature: {}", signature);
     Ok(())
 }

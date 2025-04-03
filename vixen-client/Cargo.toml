@@ -9,3 +9,5 @@ solana-client = "2.2.6"
 solana-sdk = "2.2.2"
 spl-token = "8.0.0"
 tokio = { version = "1.44.1", features = ["full"] }
+tracing = "0.1.41"
+tracing-subscriber = "0.3.19"
