@@ -29,6 +29,7 @@ GRPC geyser.
 % docker build -t vixen-server .
 % docker save vixen-server:latest| gzip >> vixen-server.tar.gz
 ```
+
 4. Set pulumi config
 Use `pulumi config set <key:val>` to set the following configuration values:
 
@@ -53,24 +54,22 @@ In one terminal:
 ```
 ./ssh-to-host 1 -L 9000:localhost:9000
 ```
-Then in another terminal, using grpcurl:
-(assumes the `grpcurl` tool is installed and that the vixen stream is running on port 9000)
-```
-grpcurl -plaintext -d '{"program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"}' 127.0.0.1:9000 vixen.stream.ProgramStreams/Subscribe
-```
+in another:
 
-7. Create a token
-Connect to the remote solana validator. We can port forward to the solana validator and then use the
-`spl-token` cli if the local solana cli config is set to use localhost:8899
 ```
 ./ssh-to-host 0 -L 8899:localhost:8899
 ```
-Then in another terminal, use the `spl-token` cli to create a token
+Finally, in a third terminal:
 ```
-solana faucet airdrop 100
-spl-token create-token
+cd vixen-client
+cargo run --release
 ```
-You should see the token mint address in the stream in the vixen terminal
+This program will run two tasks in parallel. The first simulates a client creating a token. The
+second task subscribes to the vixen stream and prints out the updates it receives.
+
+NOTE: It currently only runs a single mint, but we keep the stream open. Feel free to manually
+run token options with `spl-token` on port 8899 to continue to see the updates in the stream. When
+you are ready to exit the stream simply hit `ctrl-c` in the terminal running the vixen-client.
 
 8. (Optional) Tear down the example
 
