@@ -6538,6 +6538,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7b7921e93b2631fee882984fc4cc5c712e73efcac7229db2cf008a1caee97984"
 dependencies = [
  "prost",
+ "prost-build",
  "prost-types",
  "tonic",
  "tonic-build",

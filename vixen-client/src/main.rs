@@ -9,11 +9,13 @@ use solana_sdk::{
 use spl_token::{instruction::initialize_mint, state::Mint};
 use tracing::{error, info, info_span, Instrument};
 use tracing_subscriber::FmtSubscriber;
-use yellowstone_vixen_proto::stream::{
-    program_streams_client::ProgramStreamsClient, SubscribeRequest,
+use yellowstone_vixen_proto::{
+    prost::Message,
+    stream::{program_streams_client::ProgramStreamsClient, SubscribeRequest},
 };
 
-const GRPC_SERVER_ADDR: &str = "http://localhost:8899";
+const GRPC_SERVER_ADDR: &str = "http://localhost:9000";
+const VALIDATOR_RPC_ADDR: &str = "http://localhost:8899";
 const TOKEN_PROGRAM: &str = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
 
 #[tokio::main]
@@ -36,8 +38,16 @@ async fn main() -> Result<()> {
         program: TOKEN_PROGRAM.to_string(),
     };
     let mut stream = client.subscribe(req).await?.into_inner();
+    info!("Connected to Vixen gRPC server");
     while let Some(update) = stream.message().await? {
-        info!("Received update: {:?}", update);
+        let any = update.parsed.unwrap();
+        if let Ok(parsed_message) =
+            yellowstone_vixen_proto::parser::TokenProgramIxProto::decode(&*any.value)
+        {
+            info!("Parsed message: {:?}", parsed_message);
+        } else {
+            error!("Failed to parse message {:?}", any);
+        }
     }
 
     // let _span = info_span!("Vixen Client").entered();
@@ -51,7 +61,7 @@ async fn airdrop_and_mint_token() -> Result<()> {
     let kp = Keypair::new();
     info!("Public key: {}", kp.pubkey());
     // Fund the Keypair
-    let rpc_client = RpcClient::new("http://localhost:8899");
+    let rpc_client = RpcClient::new(VALIDATOR_RPC_ADDR);
     airdrop_new_address(kp.pubkey(), &rpc_client).await?;
     // Create a new keypair for the mint
     let mint_keypair = Keypair::new();
