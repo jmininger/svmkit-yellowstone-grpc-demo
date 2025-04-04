@@ -6,8 +6,11 @@ use solana_sdk::{
     commitment_config::CommitmentConfig, program_pack::Pack, pubkey::Pubkey, signature::Keypair,
     signer::Signer, system_instruction, transaction::Transaction,
 };
-use spl_token::{instruction::initialize_mint, state::Mint};
-use tracing::{error, info, info_span, Instrument};
+use spl_token::{
+    instruction::{initialize_account, initialize_mint},
+    state::{Account as TokenAccount, Mint},
+};
+use tracing::{error, info, info_span, warn, Instrument};
 use tracing_subscriber::FmtSubscriber;
 use yellowstone_vixen_proto::{
     prost::Message,
@@ -44,10 +47,12 @@ async fn main() -> Result<()> {
         if let Ok(parsed_message) =
             yellowstone_vixen_proto::parser::TokenProgramIxProto::decode(&*any.value)
         {
-            info!("Parsed message: {:?}", parsed_message);
-        } else {
-            error!("Failed to parse message {:?}", any);
+            let val = parsed_message.ix_oneof.unwrap();
+            info!("Parsed message: {:?}", val);
         }
+        // else {
+        //     warn!("Failed to parse TokenProgramIxProto message {:?}", any);
+        // }
     }
 
     // let _span = info_span!("Vixen Client").entered();
@@ -66,6 +71,22 @@ async fn airdrop_and_mint_token() -> Result<()> {
     // Create a new keypair for the mint
     let mint_keypair = Keypair::new();
     create_mint(&mint_keypair, &kp, &rpc_client).await?;
+    let (pk1, pk2) = create_token_accounts(&rpc_client, &kp, &mint_keypair.pubkey())?;
+    info!("Token Account 1 created: {}", pk1);
+    info!("Token Account 2 created: {}", pk2);
+
+    mint_to(
+        &rpc_client,
+        &kp,
+        &mint_keypair.pubkey(),
+        &pk1,
+        10_000_000_000,
+    )?;
+
+    let balance = fetch_token_balance(&rpc_client, &pk1)?;
+    info!("Token Account 1 balance: {}", balance);
+    let balance2 = fetch_token_balance(&rpc_client, &pk2)?;
+    info!("Token Account 2 balance: {}", balance2);
 
     Ok(())
 }
@@ -125,4 +146,115 @@ async fn create_mint(mint_keypair: &Keypair, kp: &Keypair, rpc_client: &RpcClien
     let signature = rpc_client.send_and_confirm_transaction(&tx)?;
     info!("Mint created with signature: {}", signature);
     Ok(())
+}
+
+// Create two token accounts for the mint
+fn create_token_accounts(
+    client: &RpcClient,
+    payer: &Keypair,
+    mint_pubkey: &Pubkey,
+) -> Result<(Pubkey, Pubkey)> {
+    // Create two new keypairs for the token accounts
+    let token_account1 = Keypair::new();
+    let token_account2 = Keypair::new();
+
+    // Get minimum balance for rent exemption
+    let rent = client.get_minimum_balance_for_rent_exemption(TokenAccount::LEN)?;
+
+    // Create account instructions
+    let create_account1_ix = system_instruction::create_account(
+        &payer.pubkey(),
+        &token_account1.pubkey(),
+        rent,
+        TokenAccount::LEN as u64,
+        &spl_token::id(),
+    );
+
+    let create_account2_ix = system_instruction::create_account(
+        &payer.pubkey(),
+        &token_account2.pubkey(),
+        rent,
+        TokenAccount::LEN as u64,
+        &spl_token::id(),
+    );
+
+    // Initialize token account instructions
+    let init_account1_ix = initialize_account(
+        &spl_token::id(),
+        &token_account1.pubkey(),
+        mint_pubkey,
+        &payer.pubkey(), // Using payer as owner for simplicity
+    )?;
+
+    let init_account2_ix = initialize_account(
+        &spl_token::id(),
+        &token_account2.pubkey(),
+        mint_pubkey,
+        &payer.pubkey(), // Using payer as owner for simplicity
+    )?;
+
+    // Create and sign transaction
+    let recent_blockhash = client.get_latest_blockhash()?;
+    let tx = Transaction::new_signed_with_payer(
+        &[
+            create_account1_ix,
+            init_account1_ix,
+            create_account2_ix,
+            init_account2_ix,
+        ],
+        Some(&payer.pubkey()),
+        &[payer, &token_account1, &token_account2],
+        recent_blockhash,
+    );
+
+    // Send and confirm transaction
+    let signature = client.send_and_confirm_transaction(&tx)?;
+    info!(
+        "Transaction signature for 2 token account creations: {}",
+        signature
+    );
+
+    Ok((token_account1.pubkey(), token_account2.pubkey()))
+}
+
+fn mint_to(
+    client: &RpcClient,
+    payer: &Keypair,
+    mint_pubkey: &Pubkey,
+    token_account_pubkey: &Pubkey,
+    amount: u64,
+) -> Result<()> {
+    // Create the mint_to instruction
+    let mint_to_ix = spl_token::instruction::mint_to(
+        &spl_token::id(),
+        mint_pubkey,
+        token_account_pubkey,
+        &payer.pubkey(), // Using payer as authority for simplicity
+        &[],
+        amount,
+    )?;
+
+    // Create and sign the transaction
+    let recent_blockhash = client.get_latest_blockhash()?;
+    let tx = Transaction::new_signed_with_payer(
+        &[mint_to_ix],
+        Some(&payer.pubkey()),
+        &[payer],
+        recent_blockhash,
+    );
+
+    // Send and confirm the transaction
+    let signature = client.send_and_confirm_transaction(&tx)?;
+    info!(
+        "Minted {} tokens to account {} with signature {}",
+        amount, token_account_pubkey, signature
+    );
+
+    Ok(())
+}
+
+fn fetch_token_balance(client: &RpcClient, token_account_pubkey: &Pubkey) -> Result<u64> {
+    let account_info = client.get_account(token_account_pubkey)?;
+    let token_account = TokenAccount::unpack(&account_info.data)?;
+    Ok(token_account.amount)
 }
