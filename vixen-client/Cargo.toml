@@ -11,3 +11,4 @@ spl-token = "8.0.0"
 tokio = { version = "1.44.1", features = ["full"] }
 tracing = "0.1.41"
 tracing-subscriber = "0.3.19"
+yellowstone-vixen-proto = { version = "0.2.0", features = ["stream"] }
