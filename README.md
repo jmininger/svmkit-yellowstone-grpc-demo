@@ -24,11 +24,18 @@ GRPC geyser.
 
 3. Build the vixen-stream docker image
 
+This builds the docker image for running your custom vixen-stream server
+
 ```
 % cd vixen-server
 % docker build -t vixen-server .
 % docker save vixen-server:latest| gzip >> vixen-server.tar.gz
+
+% mv vixen-server.tar.gz ../
+% cd ..
 ```
+You have now created a `vixen-server.tar.gz` file. Use this path when setting the
+`vixen:docker-payload` config value.
 
 4. Set pulumi config
 Use `pulumi config set <key:val>` to set the following configuration values:
@@ -36,8 +43,8 @@ Use `pulumi config set <key:val>` to set the following configuration values:
 | Name                       | Description                                                       | Default Value |
 | :------------------------- | :---------------------------------------------------------------- |:------------- |
 | aws:region                 | The AWS region to launch the cluster in.                          | us-east-1
-| vixen:docker-payload       | The path to the vixen-server docker image tarball.                |
-| vixen:vixen-toml           | The path to the vixen.toml file.                                  |
+| vixen:docker-payload       | The path to the vixen-server docker image tarball.                | vixen-server.tar.gz
+| vixen:vixen-toml           | The path to the vixen.toml file.                                  | vixen-server/vixen.example.toml
 | vixen:vixen-port           | The port to run the vixen server on.                              | 9000
 | validator:instanceType     | The AWS instance type to use for all of the nodes.                | t3.medium
 | validator:instanceArch     | The AWS instance architecture type to use for the AMI lookup.     | x86_64
