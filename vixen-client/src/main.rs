@@ -10,7 +10,7 @@ use spl_token::{
     instruction::{initialize_account, initialize_mint},
     state::{Account as TokenAccount, Mint},
 };
-use tracing::{error, info, info_span, warn, Instrument};
+use tracing::{error, info, info_span, Instrument};
 use tracing_subscriber::FmtSubscriber;
 use yellowstone_vixen_proto::{
     prost::Message,
@@ -27,7 +27,7 @@ async fn main() -> Result<()> {
     let subscriber = FmtSubscriber::builder().finish();
     tracing::subscriber::set_global_default(subscriber)?;
 
-    let jid = tokio::spawn(async {
+    tokio::spawn(async {
         let span = info_span!("Mint Token");
         let res = airdrop_and_mint_token().instrument(span).await;
         if let Err(_e) = res {
@@ -35,7 +35,19 @@ async fn main() -> Result<()> {
         }
     });
 
-    let span = info_span!("Vixen streaming client");
+    let vixen_client = tokio::spawn(async {
+        let span = info_span!("Vixen Streaming Client");
+        let res = vixen_client().instrument(span).await;
+        if let Err(_e) = res {
+            error!("Error connecting to Vixen client");
+        }
+    });
+    vixen_client.await?;
+
+    Ok(())
+}
+
+async fn vixen_client() -> Result<()> {
     let mut client = ProgramStreamsClient::connect(GRPC_SERVER_ADDR).await?;
     let req = SubscribeRequest {
         program: TOKEN_PROGRAM.to_string(),
@@ -54,10 +66,6 @@ async fn main() -> Result<()> {
         //     warn!("Failed to parse TokenProgramIxProto message {:?}", any);
         // }
     }
-
-    // let _span = info_span!("Vixen Client").entered();
-    jid.await?;
-
     Ok(())
 }
 
