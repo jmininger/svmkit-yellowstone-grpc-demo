@@ -2,6 +2,11 @@
 
 This example brings up a private cluster containing a single Solana validator running a Yellowstone
 GRPC geyser.
+## Dependencies for demo
+- pulumi
+- docker
+- rustc + cargo
+- gzip
 
 ## Running the Example
 
@@ -28,6 +33,7 @@ GRPC geyser.
 % cd vixen-server
 % docker build -t vixen-server .
 % docker save vixen-server:latest| gzip >> vixen-server.tar.gz
+% cd ../
 ```
 
 4. Set pulumi config
@@ -42,6 +48,11 @@ Use `pulumi config set <key:val>` to set the following configuration values:
 | validator:instanceType     | The AWS instance type to use for all of the nodes.                | t3.medium
 | validator:instanceArch     | The AWS instance architecture type to use for the AMI lookup.     | x86_64
 | yellowstone:grpc-port      | The port to run the yellowstone gRPC server on                    | 10000
+
+```bash
+% pulumi config set vixen:docker-payload vixen-server/vixen-server.tar.gz
+% pulumi config set vixen:vixen-toml vixen-server/vixen.example.toml
+```
 
 5. Run `pulumi up`
 
