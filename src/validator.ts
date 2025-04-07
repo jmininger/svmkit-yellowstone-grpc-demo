@@ -83,11 +83,14 @@ mkswap /swapfile
 systemctl daemon-reload
 mount -a
 swapon -a
-
-${geyserSetupScriptContent}
-
 `,
   tags: {
     Name: `${pulumi.getStack()}-validator`,
   },
 });
+
+export const connection = {
+  host: instance.publicDns,
+  user: "admin",
+  privateKey: sshKey.privateKeyOpenssh,
+};

@@ -4,7 +4,7 @@ import * as svmkit from "@svmkit/pulumi-svmkit";
 
 import { sshKey, instance } from "./validator";
 import { GRPC_CONFIG_PATH, allowGrpcPort} from "./grpc_geyser";
-import { vixenInstance, vixenPublicIp, sshKey as vixenSshKey, connection as vixenConnection, dockerRunCmd, waitForDocker} from "./vixen-server";
+import { vixenInstance, vixenPublicIp, sshKey as vixenSshKey, connection as vixenConnection, dockerRunCmd } from "./vixen-server";
 
 const RPC_PORT = 8899;
 const GOSSIP_PORT = 8001;
@@ -163,7 +163,7 @@ const firewallCmd = allowGrpcPort(connection, [validator, vixenInstance]);
 const dockerRun = new remote.Command("docker-run", {
   connection: vixenConnection,
   create: dockerRunCmd,
-}, { dependsOn: [waitForDocker, firewallCmd] });
+}, { dependsOn: [firewallCmd] });
 
 // Expose information required to SSH to the validator host.
 export const nodes_name = ["validator", "vixenInstance"];

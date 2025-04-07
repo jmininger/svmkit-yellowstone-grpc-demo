@@ -1,6 +1,7 @@
 import * as pulumi from "@pulumi/pulumi";
 import { remote, types } from "@pulumi/command";
 import * as fs from "fs";
+import { connection as validatorConnection } from "./validator";
 
 const config = new pulumi.Config("yellowstone");
 export const GRPC_PORT = config.getNumber("grpc-port") ?? 10000;
@@ -35,7 +36,14 @@ if (yCfgJson["libpath"] !== GRPC_PLUGIN_PATH) {
 // }
 
 // TODO: Port should be a config
-export const geyserSetupScriptContent = `
+export function allowGrpcPort(connection: any, deps: any) : any {
+    return new remote.Command("grpc_firewall", {
+      connection,
+      create: `sudo ufw allow ${GRPC_PORT}/tcp`
+  }, {dependsOn: deps});
+}
+
+export const geyserSetupScriptContent = `#!/bin/bash
 # Download yellowstone-grpc geyser plugin
 set -e  # Exit on error
 
@@ -44,8 +52,8 @@ exec > /var/log/userdata.log 2>&1
 echo "Starting UserData script at $(date)"
 
 # Update package list and install dependencies
-apt-get update
-apt-get install -y wget tar bzip2
+sudo apt-get update
+sudo apt-get install -y wget tar bzip2
 
 # Download the release
 wget -q "${releaseUrl}" -O /tmp/yellowstone-grpc.tar.bz2
@@ -66,15 +74,17 @@ rm /tmp/yellowstone-grpc.tar.bz2
 
 # Set execute permissions
 chmod +x ${GRPC_PLUGIN_DIR}
-
-cat << 'EOF' > ${GRPC_CONFIG_PATH}
-${yellowstoneConfig}
-EOF
 `;
 
-export function allowGrpcPort(connection: any, deps: any) : any {
-    return new remote.Command("grpc_firewall", {
-      connection,
-      create: `sudo ufw allow ${GRPC_PORT}/tcp`
-  }, {dependsOn: deps});
-}
+export const installGeyser = new remote.Command("install-yellowstone-grpc", {
+  connection: validatorConnection,
+  create: geyserSetupScriptContent,
+  triggers: [],
+}, { dependsOn: [] });
+
+const configCopy = new remote.CopyFile("yellowstone-grpc-config-copy", {
+  connection: validatorConnection,
+  localPath: "./yellowstone-config.json",
+  remotePath: GRPC_CONFIG_PATH,
+}, { dependsOn: [] });
+

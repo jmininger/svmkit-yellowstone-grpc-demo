@@ -114,6 +114,36 @@ export const connection = {
   user: "admin",
   privateKey: sshKey.privateKeyOpenssh,
 };
+
+const createDockerCmd = `
+# Update system and install Docker
+apt-get update -y
+apt-get install -y \
+    gzip \
+    docker.io
+
+# Start and enable Docker service
+systemctl start docker
+systemctl enable docker
+
+# Add admin user to docker group to run docker without sudo
+usermod -aG docker admin
+
+# Create directory for docker payload
+mkdir -p /home/admin
+chown admin:admin /home/admin
+
+touch /home/admin/userdata-done  # Marker file
+echo "UserData completed at $(date)"
+`;
+
+const createDocker = new remote.Command("docker-setup", {
+  connection,
+  create: createDockerCmd,
+  triggers: [],
+}, { dependsOn: [vixenInstance] });
+
+
 // Copy the files to the remote.
 const dockerCopy = new remote.CopyToRemote("docker-image-copy", {
     connection,
@@ -127,17 +157,6 @@ const configCopy = new remote.CopyFile("vixen-config-copy", {
   localPath: updatedToml,
   remotePath: "/home/admin/Vixen.toml",
 }, { dependsOn: dockerCopy });
-
-// Wait for the docker service to be ready by checking for a file
-// This is only necessary bc the userData script actually runs in parallel to other
-// pulumi cmds even though the other scripts are supposed to depend on it
-const waitForDockerCmd = `until [ -f /home/admin/userdata-done ]; do sleep 1; done`;
-export const waitForDocker = new remote.Command("docker-wait", {
-  connection,
-  create: waitForDockerCmd,
-  triggers: [],
-}, { dependsOn: [vixenInstance ] });
-
 
 export const dockerRunCmd = `cd ${imgTo} && \
     gunzip -c vixen-server.tar.gz | docker load && \
