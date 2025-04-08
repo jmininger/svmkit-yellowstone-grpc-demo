@@ -1,12 +1,12 @@
 # Solana Single Validator SPE with Yellowstone GRPC plugin
 
-This example brings up a private cluster containing a single Solana validator running a Yellowstone
-GRPC geyser. It also brings up a seperate vixen-stream server that subscribes to the geyser stream,
-parses the data into TokenExtension updates and makes them available over a gRPC endpoint.
+This example brings up a private cluster containing a single Solana validator running a `yellowstone-grpc` geyser. It also brings up a seperate `vixen-stream` grpc server that subscribes to the geyser stream,
+parses the data into TokenExtension updates, and makes them available over a gRPC endpoint. It also contains a `vixen-client` dir that you can use to demo the rpc + grpc-server spun up.
 ## Dependencies for demo
 - pulumi
 - docker
 - rustc + cargo
+- node + npm
 - gzip
 
 ## Running the Example
@@ -66,7 +66,9 @@ defaults):
 % pulumi up
 ```
 
-6. Port forward to the vixen docker container and subscribe to the stream
+6. Port forward to the vixen docker container and the solana rpc  
+
+
 In one terminal:
 ```
 ./ssh-to-host 1 -L 9000:localhost:9000
@@ -81,8 +83,9 @@ Finally, in a third terminal:
 cd vixen-client
 cargo run --release
 ```
-This program will run two tasks in parallel. The first simulates a client creating a token. The
+This program will run two tasks in parallel. The first simulates a client creating a token and two token accounts. The
 second task subscribes to the vixen stream and prints out the updates it receives.
+The logs you will see either have a `Mint Token` label which shows actions from the first task, or a `Vixen Streaming Client` label which show updates from the vixen-stream.
 
 NOTE: It currently only runs a single mint, but we keep the stream open. Feel free to manually
 run token options with `spl-token` on port 8899 to continue to see the updates in the stream. When
