@@ -1,7 +1,8 @@
 # Solana Single Validator SPE with Yellowstone GRPC plugin
 
 This example brings up a private cluster containing a single Solana validator running a Yellowstone
-GRPC geyser.
+GRPC geyser. It also brings up a seperate vixen-stream server that subscribes to the geyser stream,
+parses the data into TokenExtension updates and makes them available over a gRPC endpoint.
 ## Dependencies for demo
 - pulumi
 - docker

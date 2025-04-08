@@ -47,10 +47,6 @@ export const geyserSetupScriptContent = `#!/bin/bash
 # Download yellowstone-grpc geyser plugin
 set -e  # Exit on error
 
-# Redirect all output to a log file for debugging
-exec > /var/log/userdata.log 2>&1
-echo "Starting UserData script at $(date)"
-
 # Update package list and install dependencies
 sudo apt-get update
 sudo apt-get install -y wget tar bzip2
@@ -61,6 +57,9 @@ if [ $? -ne 0 ]; then
     echo "Failed to download release"
     exit 1
 fi
+
+sudo mkdir -p ${CONFIG_DIR}
+sudo chown admin:admin ${CONFIG_DIR}
 
 # Extract the binary
 tar -xjvf /tmp/yellowstone-grpc.tar.bz2 -C ${CONFIG_DIR}
@@ -86,5 +85,5 @@ const configCopy = new remote.CopyFile("yellowstone-grpc-config-copy", {
   connection: validatorConnection,
   localPath: "./yellowstone-config.json",
   remotePath: GRPC_CONFIG_PATH,
-}, { dependsOn: [] });
+}, { dependsOn: [installGeyser] });
 

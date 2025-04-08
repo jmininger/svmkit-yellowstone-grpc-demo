@@ -66,29 +66,9 @@ const updatedToml = grpcAddress.apply((addr) => readGrpcSocketSync(addr));
 // User data script to install Docker and run the container
 const userData = `#!/bin/bash
 set -e  # Exit on error
-# Redirect all output to a log file for debugging
-exec > /var/log/userdata.log 2>&1
-echo "Starting UserData script at $(date)"
-
-# Update system and install Docker
-apt-get update -y
-apt-get install -y \
-    gzip \
-    docker.io
-
-# Start and enable Docker service
-systemctl start docker
-systemctl enable docker
-
-# Add admin user to docker group to run docker without sudo
-usermod -aG docker admin
-
 # Create directory for docker payload
 mkdir -p /home/admin
 chown admin:admin /home/admin
-
-touch /home/admin/userdata-done  # Marker file
-echo "UserData completed at $(date)"
 `;
 
 export const vixenInstance = new aws.ec2.Instance("vixen-server", {
@@ -116,25 +96,22 @@ export const connection = {
 };
 
 const createDockerCmd = `
+# Create directory for docker payload
+mkdir -p /home/admin
+sudo chown admin:admin /home/admin
+
 # Update system and install Docker
-apt-get update -y
-apt-get install -y \
+sudo apt-get update -y
+sudo apt-get install -y \
     gzip \
     docker.io
 
 # Start and enable Docker service
-systemctl start docker
-systemctl enable docker
+sudo systemctl start docker
+sudo systemctl enable docker
 
 # Add admin user to docker group to run docker without sudo
-usermod -aG docker admin
-
-# Create directory for docker payload
-mkdir -p /home/admin
-chown admin:admin /home/admin
-
-touch /home/admin/userdata-done  # Marker file
-echo "UserData completed at $(date)"
+sudo usermod -aG docker admin
 `;
 
 const createDocker = new remote.Command("docker-setup", {
@@ -149,7 +126,7 @@ const dockerCopy = new remote.CopyToRemote("docker-image-copy", {
     connection,
     source: archive,
     remotePath: imgTo,
-});
+}, { dependsOn: createDocker });
 
 
 const configCopy = new remote.CopyFile("vixen-config-copy", {
