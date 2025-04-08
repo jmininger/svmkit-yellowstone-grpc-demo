@@ -60,13 +60,17 @@ defaults):
 % pulumi config set vixen:vixen-toml vixen-server/vixen.example.toml
 ```
 
+One thing worth noting is that because the ip address of the validator is unknown prior to spinning
+up the cluster, we update the address of the grpc server in the vixen.toml file after the cluster is
+up.
+
 5. Run `pulumi up`
 
 ```
 % pulumi up
 ```
 
-6. Port forward to the vixen docker container and the solana rpc  
+6. Port forward to the vixen docker container and the solana rpc
 
 
 In one terminal:

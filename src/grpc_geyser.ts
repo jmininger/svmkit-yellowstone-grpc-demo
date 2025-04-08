@@ -24,16 +24,22 @@ const yellowstoneConfig = fs.readFileSync("./yellowstone-config.json", "utf8");
 var yCfgJson = JSON.parse(yellowstoneConfig);
 if (yCfgJson["libpath"] !== GRPC_PLUGIN_PATH) {
   console.error(
-    `yellowstone-config.json currently indicates that the libpath is set to ${yCfgJson["libpath"]}, but its true path on the validator is ${GRPC_PLUGIN_PATH}. Please update the libpath in yellowstone-config.json to match the true path on the validator.`,
+    `yellowstone-config.json currently indicates that the libpath is set to ${yCfgJson["libpath"]}, but its true path on the validator is ${GRPC_PLUGIN_PATH} as per src/grpc_geyser.ts . Please update the libpath in yellowstone-config.json to match the true path on the validator.`,
   );
   process.exit(1);
 }
-// if (yCfgJson["port"] !== GRPC_PORT) {
-//   console.error(
-//     `yellowstone-config.json currently indicates that the port is set to ${yCfgJson["port"]}, but its true port on the validator is ${GRPC_PORT}. Please update the port in yellowstone-config.json to match the true port on the validator.`,
-//   );
-//   process.exit(1);
-// }
+
+const expectedAddress = `0.0.0.0:${GRPC_PORT}`;
+const configAddress = yCfgJson["grpc"]["address"];
+
+if (configAddress !== expectedAddress) {
+  console.error(
+    `yellowstone-config.json has grpc.address set to "${configAddress}", ` +
+    `but it should be "${expectedAddress}" to match the validator's gRPC port. ` +
+    `Please update "grpc.address" in yellowstone-config.json to "${expectedAddress}".`
+  );
+  process.exit(1);
+}
 
 // TODO: Port should be a config
 export function allowGrpcPort(connection: any, deps: any) : any {
