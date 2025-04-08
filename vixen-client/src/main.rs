@@ -92,9 +92,37 @@ async fn airdrop_and_mint_token() -> Result<()> {
     )?;
 
     let balance = fetch_token_balance(&rpc_client, &pk1)?;
-    info!("Token Account 1 balance: {}", balance);
+    info!("Token Account {} balance: {}", pk1, balance);
     let balance2 = fetch_token_balance(&rpc_client, &pk2)?;
-    info!("Token Account 2 balance: {}", balance2);
+    info!("Token Account {} balance: {}", pk2, balance2);
+
+    let transfer_amount = 1_000_000_000; // 1,000 tokens with 9 decimals
+    let transfer_instruction = spl_token_2022::instruction::transfer_checked(
+        &spl_token_2022::id(),
+        &pk1,
+        &mint_keypair.pubkey(),
+        &pk2,
+        &kp.pubkey(),
+        &[],
+        transfer_amount,
+        6,
+    )?;
+
+    let recent_blockhash = rpc_client.get_latest_blockhash()?;
+    let tx = Transaction::new_signed_with_payer(
+        &[transfer_instruction],
+        Some(&kp.pubkey()),
+        &[&kp],
+        recent_blockhash,
+    );
+
+    let signature = rpc_client.send_and_confirm_transaction(&tx)?;
+    info!("Transfer transaction signature: {}", signature);
+
+    let balance = fetch_token_balance(&rpc_client, &pk1)?;
+    info!("Token Account {} updated balance: {}", pk1, balance);
+    let balance2 = fetch_token_balance(&rpc_client, &pk2)?;
+    info!("Token Account {} updated balance: {}", pk2, balance2);
 
     Ok(())
 }
