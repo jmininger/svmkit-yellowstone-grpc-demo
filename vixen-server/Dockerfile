@@ -6,14 +6,12 @@ WORKDIR /usr/src/app
 COPY Cargo.toml Cargo.lock ./
 
 # Create a dummy main.rs to cache dependencies
-RUN mkdir src && echo "fn main() {}" > src/main.rs
+RUN mkdir src
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
     protobuf-compiler \
     && rm -rf /var/lib/apt/lists/*
-
-RUN cargo build --release
 
 # Copy the actual source code
 COPY src ./src

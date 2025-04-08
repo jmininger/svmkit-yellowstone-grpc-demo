@@ -6,11 +6,11 @@ use solana_sdk::{
     commitment_config::CommitmentConfig, program_pack::Pack, pubkey::Pubkey, signature::Keypair,
     signer::Signer, system_instruction, transaction::Transaction,
 };
-use spl_token::{
+use spl_token_2022::{
     instruction::{initialize_account, initialize_mint},
     state::{Account as TokenAccount, Mint},
 };
-use tracing::{error, info, info_span, warn, Instrument};
+use tracing::{error, info, info_span, Instrument};
 use tracing_subscriber::FmtSubscriber;
 use yellowstone_vixen_proto::{
     prost::Message,
@@ -19,7 +19,6 @@ use yellowstone_vixen_proto::{
 
 const GRPC_SERVER_ADDR: &str = "http://localhost:9000";
 const VALIDATOR_RPC_ADDR: &str = "http://localhost:8899";
-const TOKEN_PROGRAM: &str = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -27,7 +26,7 @@ async fn main() -> Result<()> {
     let subscriber = FmtSubscriber::builder().finish();
     tracing::subscriber::set_global_default(subscriber)?;
 
-    let jid = tokio::spawn(async {
+    tokio::spawn(async {
         let span = info_span!("Mint Token");
         let res = airdrop_and_mint_token().instrument(span).await;
         if let Err(_e) = res {
@@ -35,34 +34,46 @@ async fn main() -> Result<()> {
         }
     });
 
-    let span = info_span!("Vixen streaming client");
+    let vixen_client = tokio::spawn(async {
+        let span = info_span!("Vixen Streaming Client");
+        let res = vixen_client().instrument(span).await;
+        if let Err(_e) = res {
+            error!("Error connecting to Vixen client");
+        }
+    });
+    vixen_client.await?;
+
+    Ok(())
+}
+
+async fn vixen_client() -> Result<()> {
     let mut client = ProgramStreamsClient::connect(GRPC_SERVER_ADDR).await?;
     let req = SubscribeRequest {
-        program: TOKEN_PROGRAM.to_string(),
+        program: spl_token_2022::id().to_string(),
     };
     let mut stream = client.subscribe(req).await?.into_inner();
     info!("Connected to Vixen gRPC server");
     while let Some(update) = stream.message().await? {
         let any = update.parsed.unwrap();
         if let Ok(parsed_message) =
-            yellowstone_vixen_proto::parser::TokenProgramIxProto::decode(&*any.value)
+            yellowstone_vixen_proto::parser::TokenExtensionProgramIxProto::decode(&*any.value)
         {
             let val = parsed_message.ix_oneof.unwrap();
+            info!("Parsed message: {:?}", val);
+        } else if let Ok(parsed_message) =
+            yellowstone_vixen_proto::parser::TokenExtensionStateProto::decode(&*any.value)
+        {
+            let val = parsed_message.state_oneof.unwrap();
             info!("Parsed message: {:?}", val);
         }
         // else {
         //     warn!("Failed to parse TokenProgramIxProto message {:?}", any);
         // }
     }
-
-    // let _span = info_span!("Vixen Client").entered();
-    jid.await?;
-
     Ok(())
 }
 
 async fn airdrop_and_mint_token() -> Result<()> {
-    // TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
     let kp = Keypair::new();
     info!("Public key: {}", kp.pubkey());
     // Fund the Keypair
@@ -123,12 +134,12 @@ async fn create_mint(mint_keypair: &Keypair, kp: &Keypair, rpc_client: &RpcClien
         &mint_pubkey,
         rent,
         Mint::LEN as u64,
-        &spl_token::id(),
+        &spl_token_2022::id(),
     );
 
     // Initialize the mint
     let initialize_mint_ix = initialize_mint(
-        &spl_token::id(),
+        &spl_token_2022::id(),
         &mint_pubkey,
         &kp.pubkey(), // Mint authority
         None,         // Optional freeze authority
@@ -167,7 +178,7 @@ fn create_token_accounts(
         &token_account1.pubkey(),
         rent,
         TokenAccount::LEN as u64,
-        &spl_token::id(),
+        &spl_token_2022::id(),
     );
 
     let create_account2_ix = system_instruction::create_account(
@@ -175,19 +186,19 @@ fn create_token_accounts(
         &token_account2.pubkey(),
         rent,
         TokenAccount::LEN as u64,
-        &spl_token::id(),
+        &spl_token_2022::id(),
     );
 
     // Initialize token account instructions
     let init_account1_ix = initialize_account(
-        &spl_token::id(),
+        &spl_token_2022::id(),
         &token_account1.pubkey(),
         mint_pubkey,
         &payer.pubkey(), // Using payer as owner for simplicity
     )?;
 
     let init_account2_ix = initialize_account(
-        &spl_token::id(),
+        &spl_token_2022::id(),
         &token_account2.pubkey(),
         mint_pubkey,
         &payer.pubkey(), // Using payer as owner for simplicity
@@ -225,8 +236,8 @@ fn mint_to(
     amount: u64,
 ) -> Result<()> {
     // Create the mint_to instruction
-    let mint_to_ix = spl_token::instruction::mint_to(
-        &spl_token::id(),
+    let mint_to_ix = spl_token_2022::instruction::mint_to(
+        &spl_token_2022::id(),
         mint_pubkey,
         token_account_pubkey,
         &payer.pubkey(), // Using payer as authority for simplicity

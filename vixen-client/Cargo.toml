@@ -7,7 +7,7 @@ edition = "2021"
 color-eyre = "0.6.3"
 solana-client = "2.2.6"
 solana-sdk = "2.2.2"
-spl-token = "8.0.0"
+spl-token-2022 = "8.0.1"
 tokio = { version = "1.44.1", features = ["full"] }
 tracing = "0.1.41"
 tracing-subscriber = "0.3.19"
