@@ -48,35 +48,17 @@ aws.ec2.getAmi({
 
 const stackName = pulumi.getStack();
 
-function readGrpcSocketSync(newEndpoint:string) : string{
-  const fileContent: string = fs.readFileSync(tomlFrom, 'utf-8');
-  const config: any = toml.parse(fileContent); // Using any since TOML config structure isn't strictly defined
-  if (!config.yellowstone) {
-      config.yellowstone = {};
-  }
-  config['yellowstone']['endpoint'] = newEndpoint;
-  const updatedToml: string = toml.stringify(config);
-  const tmpobj: tmp.FileResult = tmp.fileSync();
-  fs.writeFileSync(tmpobj.name, updatedToml, 'utf-8');
-  return tmpobj.name;
-}
-const updatedToml = grpcAddress.apply((addr) => readGrpcSocketSync(addr));
-
-
-// User data script to install Docker and run the container
-const userData = `#!/bin/bash
-set -e  # Exit on error
-# Create directory for docker payload
-mkdir -p /home/admin
-chown admin:admin /home/admin
-`;
-
 export const vixenInstance = new aws.ec2.Instance("vixen-server", {
   ami,
   instanceType,
   keyName: keyPair.keyName,
   vpcSecurityGroupIds: [externalSg.id, internalSg.id],
-  userData,
+  userData: `#!/bin/bash
+set -e  # Exit on error
+# Create directory for docker payload
+mkdir -p /home/admin
+chown admin:admin /home/admin
+`,
   tags: {
     Name: `${stackName}-vixen-server`,
   },
@@ -85,9 +67,8 @@ export const vixenInstance = new aws.ec2.Instance("vixen-server", {
 // Export the public IP of the instance
 export const vixenPublicIp = vixenInstance.publicIp;
 
-// Set up source and target of the remote copy.
-const archive = new pulumi.asset.FileArchive(imgFrom);
-const imgTo = "/home/admin/"
+// Setup docker + copy the docker image to the remote instance
+// Don't actually run the docker container until the validator is up and the geyser port is exposed
 
 export const connection = {
   host: vixenInstance.publicDns,
@@ -120,6 +101,9 @@ const createDocker = new remote.Command("docker-setup", {
   triggers: [],
 }, { dependsOn: [vixenInstance] });
 
+// Set up source and target of the docker copy.
+const archive = new pulumi.asset.FileArchive(imgFrom);
+const imgTo = "/home/admin/"
 
 // Copy the files to the remote.
 const dockerCopy = new remote.CopyToRemote("docker-image-copy", {
@@ -127,6 +111,22 @@ const dockerCopy = new remote.CopyToRemote("docker-image-copy", {
     source: archive,
     remotePath: imgTo,
 }, { dependsOn: createDocker });
+
+// We need to update the Vixen.toml file to set the grpc address set up using the ip assigned to the
+// validator
+function readGrpcSocketSync(newEndpoint:string) : string{
+  const fileContent: string = fs.readFileSync(tomlFrom, 'utf-8');
+  const config: any = toml.parse(fileContent); // Using any since TOML config structure isn't strictly defined
+  if (!config.yellowstone) {
+      config.yellowstone = {};
+  }
+  config['yellowstone']['endpoint'] = newEndpoint;
+  const updatedToml: string = toml.stringify(config);
+  const tmpobj: tmp.FileResult = tmp.fileSync();
+  fs.writeFileSync(tmpobj.name, updatedToml, 'utf-8');
+  return tmpobj.name;
+}
+const updatedToml = grpcAddress.apply((addr) => readGrpcSocketSync(addr));
 
 
 const configCopy = new remote.CopyFile("vixen-config-copy", {

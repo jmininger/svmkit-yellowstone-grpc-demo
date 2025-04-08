@@ -6,7 +6,7 @@ import { connection as validatorConnection } from "./validator";
 const config = new pulumi.Config("yellowstone");
 export const GRPC_PORT = config.getNumber("grpc-port") ?? 10000;
 
-// Make sure we grab the ubuntu 22 version of the release so that it works on our machine
+// Make sure we grab the ubuntu 22 version of the release so that it works on the machine
 const assetName =
   "yellowstone-grpc-geyser-release22-x86_64-unknown-linux-gnu.tar.bz2";
 const geyserVersion = "v6.0.0+solana.2.2.1";
@@ -29,6 +29,8 @@ if (yCfgJson["libpath"] !== GRPC_PLUGIN_PATH) {
   process.exit(1);
 }
 
+// Run some checks to make sure the yellowstone-config.json has a matching `grpc address` to the
+// one being exposed on the validator
 const expectedAddress = `0.0.0.0:${GRPC_PORT}`;
 const configAddress = yCfgJson["grpc"]["address"];
 
@@ -41,7 +43,6 @@ if (configAddress !== expectedAddress) {
   process.exit(1);
 }
 
-// TODO: Port should be a config
 export function allowGrpcPort(connection: any, deps: any) : any {
     return new remote.Command("grpc_firewall", {
       connection,
@@ -87,6 +88,7 @@ export const installGeyser = new remote.Command("install-yellowstone-grpc", {
   triggers: [],
 }, { dependsOn: [] });
 
+// Copy the yellowstone-grpc config file to the validator
 const configCopy = new remote.CopyFile("yellowstone-grpc-config-copy", {
   connection: validatorConnection,
   localPath: "./yellowstone-config.json",
