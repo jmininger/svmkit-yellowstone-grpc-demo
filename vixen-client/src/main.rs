@@ -13,6 +13,7 @@ use spl_token_2022::{
 use tracing::{error, info, info_span, Instrument};
 use tracing_subscriber::FmtSubscriber;
 use yellowstone_vixen_proto::{
+    parser::{TokenExtensionProgramIxProto, TokenExtensionStateProto},
     prost::Message,
     stream::{program_streams_client::ProgramStreamsClient, SubscribeRequest},
 };
@@ -55,14 +56,10 @@ async fn vixen_client() -> Result<()> {
     info!("Connected to Vixen gRPC server");
     while let Some(update) = stream.message().await? {
         let any = update.parsed.unwrap();
-        if let Ok(parsed_message) =
-            yellowstone_vixen_proto::parser::TokenExtensionProgramIxProto::decode(&*any.value)
-        {
+        if let Ok(parsed_message) = TokenExtensionProgramIxProto::decode(&*any.value) {
             let val = parsed_message.ix_oneof.unwrap();
             info!("Parsed message: {:?}", val);
-        } else if let Ok(parsed_message) =
-            yellowstone_vixen_proto::parser::TokenExtensionStateProto::decode(&*any.value)
-        {
+        } else if let Ok(parsed_message) = TokenExtensionStateProto::decode(&*any.value) {
             let val = parsed_message.state_oneof.unwrap();
             info!("Parsed message: {:?}", val);
         }
