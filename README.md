@@ -8,7 +8,7 @@ parses the data into TokenExtension updates, and makes them available over a gRP
 - rustc + cargo
 - node + npm
 - gzip
-- protoc 
+- protoc
 
 ## Running the Example
 
@@ -31,11 +31,12 @@ parses the data into TokenExtension updates, and makes them available over a gRP
 
 3. Build the vixen-stream docker image
 
-This builds the docker image for running your custom vixen-stream server
+This builds the docker image for running your custom vixen-stream server. We target `linux/amd64` to
+ensure that the image can run on the AWS instance even if it is built on an M1 mac.
 
 ```
 % cd vixen-server
-% docker build -t vixen-server .
+% docker build --platform linux/amd64 -t vixen-server .
 % docker save vixen-server:latest| gzip >> vixen-server.tar.gz
 % cd ../
 ```
@@ -60,7 +61,6 @@ defaults):
 Should you wish to change the config values from the defaults, you can do so like this:
 ```bash
 % pulumi config set vixen:docker-payload vixen-server/vixen-server.tar.gz
-% pulumi config set vixen:vixen-toml vixen-server/vixen.example.toml
 ```
 
 One thing worth noting is that because the ip address of the validator is unknown prior to spinning
