@@ -32,12 +32,15 @@ parses the data into TokenExtension updates, and makes them available over a gRP
 3. Build the vixen-stream docker image
 
 This builds the docker image for running your custom vixen-stream server. We target `linux/amd64` to
-ensure that the image can run on the AWS instance even if it is built on an M1 mac.
+ensure that the image can run on the AWS instance even if it is built on an M1 mac. Note that the
+`platform` flag only exists on relatively newer versions of the `docker` cli. If you have an older
+version of docker without the option, but are already on an amd64 host, you can skip the platform
+flags and subsequent values for both the commands below
 
 ```
 % cd vixen-server
 % docker build --platform linux/amd64 -t vixen-server .
-% docker save vixen-server:latest| gzip >> vixen-server.tar.gz
+% docker save --platform linux/amd64 vixen-server:latest| gzip >> vixen-server.tar.gz
 % cd ../
 ```
 You have now created a `vixen-server.tar.gz` file. Use this path when setting the
@@ -57,11 +60,6 @@ defaults):
 | validator:instanceArch     | The AWS instance architecture type to use for the AMI lookup.     | x86_64
 | yellowstone:grpc-port      | The port to run the yellowstone gRPC server on                    | 10000
 
-
-Should you wish to change the config values from the defaults, you can do so like this:
-```bash
-% pulumi config set vixen:docker-payload vixen-server/vixen-server.tar.gz
-```
 
 One thing worth noting is that because the ip address of the validator is unknown prior to spinning
 up the cluster, we update the address of the grpc server in the vixen.toml file after the cluster is
