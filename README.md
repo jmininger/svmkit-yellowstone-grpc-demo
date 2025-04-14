@@ -8,6 +8,7 @@ parses the data into TokenExtension updates, and makes them available over a gRP
 - rustc + cargo
 - node + npm
 - gzip
+- protoc 
 
 ## Running the Example
 
