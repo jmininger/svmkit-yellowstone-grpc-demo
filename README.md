@@ -1,7 +1,7 @@
 # Solana Single Validator SPE with Yellowstone GRPC plugin
 
 This example brings up a private cluster containing a single Solana validator running a `yellowstone-grpc` geyser. It also brings up a seperate `vixen-stream` grpc server that subscribes to the geyser stream,
-parses the data into TokenExtension updates, and makes them available over a gRPC endpoint. It also contains a `vixen-client` dir that you can use to demo the rpc + grpc-server spun up.
+parses the data into TokenExtension updates, and makes them available over a gRPC endpoint. It also contains a `vixen-client` directory that you can use to demo the rpc + grpc-server spun up.
 ## Dependencies for demo
 - pulumi
 - docker
@@ -55,6 +55,8 @@ defaults):
 | validator:instanceArch     | The AWS instance architecture type to use for the AMI lookup.     | x86_64
 | yellowstone:grpc-port      | The port to run the yellowstone gRPC server on                    | 10000
 
+
+Should you wish to change the config values from the defaults, you can do so like this:
 ```bash
 % pulumi config set vixen:docker-payload vixen-server/vixen-server.tar.gz
 % pulumi config set vixen:vixen-toml vixen-server/vixen.example.toml

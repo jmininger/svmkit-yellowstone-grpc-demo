@@ -13,7 +13,7 @@ import { GRPC_PORT as YELLOWSTONE_GRPC_PORT } from "./grpc_geyser";
 const config = new pulumi.Config("vixen");
 const instanceType = config.get("instanceType") ?? "t3.medium";
 const instanceArch = config.get("instanceArch") ?? "x86_64";
-const imgFrom = config.get("docker-payload") ?? "vixen-server.tar.gz";
+const imgFrom = config.get("docker-payload") ?? "vixen-server/vixen-server.tar.gz";
 const tomlFrom = config.get("vixen-toml") ?? "vixen-server/vixen.example.toml";
 const VIXEN_PORT = config.getNumber("vixen-port") ?? 9000;
 
