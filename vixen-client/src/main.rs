@@ -7,6 +7,7 @@ use solana_sdk::{
     signer::Signer, system_instruction, transaction::Transaction,
 };
 use spl_token_2022::{
+    amount_to_ui_amount_string,
     instruction::{initialize_account, initialize_mint},
     state::{Account as TokenAccount, Mint},
 };
@@ -92,11 +93,19 @@ async fn airdrop_and_mint_token() -> Result<()> {
     )?;
 
     let balance = fetch_token_balance(&rpc_client, &pk1)?;
-    info!("Token Account {} balance: {}", pk1, balance);
+    info!(
+        "Token Account {} balance: {}",
+        pk1,
+        amount_to_ui_amount_string(balance, 6)
+    );
     let balance2 = fetch_token_balance(&rpc_client, &pk2)?;
-    info!("Token Account {} balance: {}", pk2, balance2);
+    info!(
+        "Token Account {} balance: {}",
+        pk2,
+        amount_to_ui_amount_string(balance2, 6)
+    );
 
-    let transfer_amount = 1_000_000_000; // 1,000 tokens with 9 decimals
+    let transfer_amount = 1_000_000_000;
     let transfer_instruction = spl_token_2022::instruction::transfer_checked(
         &spl_token_2022::id(),
         &pk1,
@@ -120,9 +129,17 @@ async fn airdrop_and_mint_token() -> Result<()> {
     info!("Transfer transaction signature: {}", signature);
 
     let balance = fetch_token_balance(&rpc_client, &pk1)?;
-    info!("Token Account {} updated balance: {}", pk1, balance);
+    info!(
+        "Token Account {} updated balance: {}",
+        pk1,
+        amount_to_ui_amount_string(balance, 6)
+    );
     let balance2 = fetch_token_balance(&rpc_client, &pk2)?;
-    info!("Token Account {} updated balance: {}", pk2, balance2);
+    info!(
+        "Token Account {} updated balance: {}",
+        pk2,
+        amount_to_ui_amount_string(balance2, 6)
+    );
 
     Ok(())
 }
@@ -283,7 +300,9 @@ fn mint_to(
     let signature = client.send_and_confirm_transaction(&tx)?;
     info!(
         "Minted {} tokens to account {} with signature {}",
-        amount, token_account_pubkey, signature
+        amount_to_ui_amount_string(amount, 6),
+        token_account_pubkey,
+        signature
     );
 
     Ok(())
