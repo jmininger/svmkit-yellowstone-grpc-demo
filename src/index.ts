@@ -12,7 +12,7 @@ const FAUCET_PORT = 9900;
 
 // Note: It's very important that the agave version and the grpc geyser plugin version are
 // compatible
-const AGAVE_VERSION = "2.2.1-1";
+const AGAVE_VERSION = "2.1.16-1";
 
 // Create some keys for this validator to use.
 const validatorKey = new svmkit.KeyPair("validator-key");

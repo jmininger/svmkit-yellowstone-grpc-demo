@@ -9,7 +9,7 @@ export const GRPC_PORT = config.getNumber("grpc-port") ?? 10000;
 // Make sure we grab the ubuntu 22 version of the release so that it works on the machine
 const assetName =
   "yellowstone-grpc-geyser-release22-x86_64-unknown-linux-gnu.tar.bz2";
-const geyserVersion = "v6.0.0+solana.2.2.1";
+const geyserVersion = "v5.0.1+solana.2.1.15";
 const releaseUrl = `https://github.com/rpcpool/yellowstone-grpc/releases/download/${geyserVersion}/${assetName}`;
 
 const CONFIG_DIR = "/home/sol";
