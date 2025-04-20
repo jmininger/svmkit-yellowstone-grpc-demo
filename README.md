@@ -2,6 +2,10 @@
 
 This example brings up a private cluster containing a single Solana validator running a `yellowstone-grpc` geyser. It also brings up a seperate `vixen-stream` grpc server that subscribes to the geyser stream,
 parses the data into TokenExtension updates, and makes them available over a gRPC endpoint. It also contains a `vixen-client` directory that you can use to demo the rpc + grpc-server spun up.
+## Demo Video
+[![Watch the demo](https://img.youtube.com/vi/8vh38ky_69U/maxresdefault.jpg)](https://www.youtube.com/watch?v=8vh38ky_69U)
+
+
 ## Dependencies for demo
 - pulumi
 - docker
